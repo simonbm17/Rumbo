@@ -198,6 +198,78 @@ const CUSTOMERS = [
   { name: "Ferretería Industrial JR", taxId: "830112447-9", city: "Barranquilla", contactName: "Ricardo Jiménez" },
 ];
 
+// --- validación --------------------------------------------------------------
+
+/**
+ * Comprueba las tres invariantes del modelo de asignaciones. Lanza si alguna
+ * falla: un seed que genera datos inválidos es peor que uno que no corre,
+ * porque el error aparece mucho después y lejos de su causa.
+ */
+async function validarInvariantes() {
+  const problemas: string[] = [];
+
+  const vehiculosConDos = await prisma.$queryRaw<{ plate: string; n: bigint }[]>`
+    SELECT t."plate", count(*) AS n
+    FROM "DriverAssignment" a
+    JOIN "Truck" t ON t."id" = a."truckId"
+    WHERE a."endedAt" IS NULL
+    GROUP BY t."plate" HAVING count(*) > 1
+  `;
+  if (vehiculosConDos.length > 0) {
+    problemas.push(
+      `Vehículos con más de una asignación vigente: ${vehiculosConDos.map((v) => v.plate).join(", ")}`
+    );
+  }
+
+  const conductoresConDos = await prisma.$queryRaw<{ nombre: string }[]>`
+    SELECT d."firstName" || ' ' || d."lastName" AS nombre
+    FROM "DriverAssignment" a
+    JOIN "Driver" d ON d."id" = a."driverId"
+    WHERE a."endedAt" IS NULL
+    GROUP BY d."id", d."firstName", d."lastName" HAVING count(*) > 1
+  `;
+  if (conductoresConDos.length > 0) {
+    problemas.push(
+      `Conductores con más de una asignación vigente: ${conductoresConDos.map((c) => c.nombre).join(", ")}`
+    );
+  }
+
+  const desajustes = await prisma.$queryRaw<{ plate: string }[]>`
+    SELECT t."plate"
+    FROM "Truck" t
+    LEFT JOIN "DriverAssignment" a
+           ON a."truckId" = t."id" AND a."endedAt" IS NULL
+    WHERE t."currentDriverId" IS DISTINCT FROM a."driverId"
+  `;
+  if (desajustes.length > 0) {
+    problemas.push(
+      `currentDriverId no coincide con la asignación vigente en: ${desajustes.map((d) => d.plate).join(", ")}`
+    );
+  }
+
+  const dobleViaje = await prisma.$queryRaw<{ nombre: string }[]>`
+    SELECT d."firstName" || ' ' || d."lastName" AS nombre
+    FROM "Trip" v
+    JOIN "Driver" d ON d."id" = v."driverId"
+    WHERE v."status" = 'IN_PROGRESS'
+    GROUP BY d."id", d."firstName", d."lastName" HAVING count(*) > 1
+  `;
+  if (dobleViaje.length > 0) {
+    problemas.push(
+      `Conductores en más de un viaje en curso: ${dobleViaje.map((d) => d.nombre).join(", ")}`
+    );
+  }
+
+  if (problemas.length > 0) {
+    throw new Error(
+      [
+        "El seed generó datos que violan las invariantes de asignación:",
+        ...problemas.map((p) => `  - ${p}`),
+      ].join("\n")
+    );
+  }
+}
+
 // --- carga ------------------------------------------------------------------
 
 async function main() {
@@ -208,6 +280,9 @@ async function main() {
   await prisma.document.deleteMany();
   await prisma.maintenance.deleteMany();
   await prisma.trip.deleteMany();
+  // Antes que Truck y Driver: las claves foráneas son RESTRICT, así que un
+  // vehículo o conductor con historial no se puede borrar mientras exista.
+  await prisma.driverAssignment.deleteMany();
   await prisma.truck.deleteMany();
   await prisma.driver.deleteMany();
   await prisma.customer.deleteMany();
@@ -331,7 +406,8 @@ async function main() {
           fuelType: "Diésel",
           tankLiters: t.axles >= 5 ? 800 : 200,
           purchaseDate: daysFromNow(-between(400, 2500)),
-          currentDriverId: drivers[i % drivers.length]?.id ?? null,
+          // Sin conductor todavía: la asignación se construye en su propia
+          // fase, para que el historial y la proyección salgan del mismo sitio.
           notes:
             i === 3
               ? "Ingresó a taller por falla en la caja de velocidades."
@@ -340,6 +416,50 @@ async function main() {
       })
     );
   }
+
+  // --- roster de asignaciones vigentes --------------------------------------
+  //
+  // Se construye explícitamente y no con `drivers[i % drivers.length]`, que al
+  // crecer el conjunto produce relaciones irreales: con 6 vehículos y 5
+  // conductores repetía a una persona en dos vehículos a la vez.
+  //
+  // Emparejamiento uno a uno. El vehículo en taller (índice 3) queda sin
+  // conductor a propósito: es el caso realista y ejercita la ruta de
+  // "vehículo sin asignación vigente".
+  console.log("Construyendo asignaciones vigentes…");
+
+  const roster = new Map<string, string>(); // truckId → driverId
+  let siguienteConductor = 0;
+  for (const [i, truck] of trucks.entries()) {
+    if (i === 3) continue; // el que está en taller
+    const conductor = drivers[siguienteConductor];
+    if (!conductor) break; // no hay más conductores disponibles
+    roster.set(truck.id, conductor.id);
+    siguienteConductor++;
+  }
+
+  for (const [truckId, driverId] of roster) {
+    await prisma.driverAssignment.create({
+      data: {
+        truckId,
+        driverId,
+        // Los datos de demostración son ficticios, así que acá sí hay fecha.
+        // Las filas que produce la MIGRACIÓN llevan startedAt = NULL porque
+        // ahí la fecha real no se conoce y no se inventa.
+        startedAt: daysFromNow(-between(120, 420)),
+        source: "MANUAL",
+        createdById: admin.id,
+      },
+    });
+    // Proyección: la caché se deriva del historial, nunca al revés.
+    await prisma.truck.update({
+      where: { id: truckId },
+      data: { currentDriverId: driverId },
+    });
+  }
+
+  /** Conductor asignado a un vehículo, o null si no tiene. */
+  const conductorAsignado = (truckId: string) => roster.get(truckId) ?? null;
 
   // --- documentos ----------------------------------------------------------
   console.log("Creando documentos…");
@@ -404,13 +524,46 @@ async function main() {
   console.log("Creando viajes, cargas y gastos…");
   let tripNumber = 1;
 
+  // Nadie puede estar en dos viajes en curso a la vez. Es una comprobación
+  // simple a propósito: no hace falta un motor de disponibilidad, solo evitar
+  // el absurdo de que una persona conduzca dos vehículos al mismo tiempo.
+  const enViajeAhora = new Set<string>();
+
   // 8 meses hacia atrás y algunos viajes futuros ya programados.
   for (let offset = -240; offset <= 12; offset += 1) {
     // Aproximadamente un viaje cada 2,5 días.
     if (rnd() > 0.4) continue;
 
     const truck = pick(trucks);
-    const driver = pick(drivers);
+
+    /*
+      El conductor del viaje sale de la asignación del vehículo, no de un
+      sorteo sin relación. Eso hace que la demo sea coherente: quien está
+      asignado a un vehículo es normalmente quien lo conduce.
+
+      Un 20% de las veces conduce otra persona, a propósito. Es un caso real
+      —reemplazo, incapacidad, operación temporal— y sirve para comprobar que
+      `Trip.driverId` y `DriverAssignment.driverId` PUEDEN diferir de forma
+      legítima: son hechos distintos y el sistema debe soportarlo.
+    */
+    const asignado = conductorAsignado(truck.id);
+    const esReemplazo = !asignado || rnd() < 0.2;
+
+    let driver: (typeof drivers)[number];
+    if (!esReemplazo && asignado) {
+      driver = drivers.find((d) => d.id === asignado)!;
+    } else {
+      // Un reemplazo es cualquiera menos el titular del vehículo.
+      const suplentes = drivers.filter((d) => d.id !== asignado);
+      driver = pick(suplentes.length > 0 ? suplentes : drivers);
+    }
+
+    const notaReemplazo = esReemplazo
+      ? asignado
+        ? "Conductor de reemplazo: el titular del vehículo no estaba disponible."
+        : "Vehículo sin conductor asignado: operación temporal."
+      : null;
+
     const origin = pick(CITIES);
     let destination = pick(CITIES);
     while (destination === origin) destination = pick(CITIES);
@@ -423,6 +576,17 @@ async function main() {
     if (offset > 2) status = "PLANNED";
     else if (offset > -durationDays - 1) status = "IN_PROGRESS";
     else status = rnd() < 0.05 ? "CANCELLED" : "COMPLETED";
+
+    if (status === "IN_PROGRESS") {
+      if (enViajeAhora.has(driver.id)) {
+        // Ya está en ruta: se busca a alguien libre y, si no hay, el viaje se
+        // da por terminado en vez de duplicar a la persona.
+        const libre = drivers.find((d) => !enViajeAhora.has(d.id));
+        if (libre) driver = libre;
+        else status = "COMPLETED";
+      }
+      if (status === "IN_PROGRESS") enViajeAhora.add(driver.id);
+    }
 
     const distanceKm = between(180, 1150);
     const startOdometerKm = Math.max(
@@ -448,7 +612,9 @@ async function main() {
         distanceKm: status === "PLANNED" ? null : distanceKm,
         status,
         revenue,
-        notes: rnd() < 0.15 ? "Entrega con cita programada en planta." : null,
+        notes:
+          notaReemplazo ??
+          (rnd() < 0.15 ? "Entrega con cita programada en planta." : null),
       },
     });
 
@@ -674,6 +840,14 @@ async function main() {
     ],
   });
 
+  // --- validación de invariantes -------------------------------------------
+  //
+  // El seed falla si genera datos que la migración rechazaría. Sin esto, un
+  // cambio futuro podría volver a producir en silencio el caso que dio origen
+  // a todo esto: una persona asignada a dos vehículos a la vez.
+  console.log("Validando invariantes…");
+  await validarInvariantes();
+
   const [truckCount, tripCount, cargoCount, expenseCount, docCount] =
     await Promise.all([
       prisma.truck.count(),
@@ -683,10 +857,16 @@ async function main() {
       prisma.document.count(),
     ]);
 
+  const [asignacionesVigentes, reemplazos] = await Promise.all([
+    prisma.driverAssignment.count({ where: { endedAt: null } }),
+    prisma.trip.count({ where: { notes: { contains: "reemplazo" } } }),
+  ]);
+
   console.log(`
 Datos de demostración cargados:
   ${truckCount} camiones · ${drivers.length} conductores · ${customers.length} clientes
   ${tripCount} viajes · ${cargoCount} cargas · ${expenseCount} gastos · ${docCount} documentos
+  ${asignacionesVigentes} asignaciones vigentes · ${reemplazos} viajes con conductor de reemplazo
 
 Ingresá con:
   Administrador  ${adminEmail} / ${adminPassword}

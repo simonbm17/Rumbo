@@ -33,6 +33,9 @@ const TABLAS = [
   "Expense",
   "Maintenance",
   "Trip",
+  // Explícita aunque `CASCADE` la alcanzaría de todos modos: si mañana alguien
+  // quita el CASCADE, el olvido saldría como casos que se contaminan entre sí.
+  "DriverAssignment",
   "Truck",
   "Driver",
   "Customer",

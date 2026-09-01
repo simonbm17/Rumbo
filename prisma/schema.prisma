@@ -101,6 +101,20 @@ enum ExpenseCategory {
   OTRO
 }
 
+enum AssignmentSource {
+  MANUAL     // la creó una persona desde la aplicación
+  MIGRATION  // reconstruida desde Truck.currentDriverId; datos incompletos
+}
+
+/// Motivo por el que terminó una asignación. Solo existe cuando `endedAt`
+/// existe: no es un estado paralelo, es el porqué del único evento que cierra.
+enum AssignmentEndReason {
+  REASSIGNED // terminó porque se asignó otra persona u otro vehículo
+  RELEASED   // se liberó sin reemplazo
+  ARCHIVED   // se archivó el vehículo o el conductor
+  CANCELLED  // se creó por error: NO representa una asignación real
+}
+
 enum DocumentType {
   SOAT
   TECNOMECANICA
@@ -129,7 +143,9 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  activity ActivityLog[]
+  activity           ActivityLog[]
+  assignmentsCreated DriverAssignment[] @relation("AsignacionCreada")
+  assignmentsEnded   DriverAssignment[] @relation("AsignacionCerrada")
 }
 
 model ActivityLog {
@@ -195,6 +211,7 @@ model Truck {
   maintenances Maintenance[]
   expenses     Expense[]
   documents    Document[]
+  assignments  DriverAssignment[]
 
   @@index([status])
   @@index([archived])
@@ -221,10 +238,11 @@ model Driver {
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
-  assignedTrucks Truck[]    @relation("AssignedTruck")
+  assignedTrucks Truck[]            @relation("AssignedTruck")
   trips          Trip[]
   expenses       Expense[]
   documents      Document[]
+  assignments    DriverAssignment[]
 
   @@index([status])
   @@index([archived])
@@ -374,4 +392,63 @@ model Document {
   @@index([truckId])
   @@index([driverId])
   @@index([expiresAt])
+}
+
+// ---------------------------------------------------------------------------
+// Historial de asignaciones
+// ---------------------------------------------------------------------------
+
+/// Quién es responsable de qué vehículo, y desde cuándo.
+///
+/// Es la fuente de verdad histórica y operacional. `Truck.currentDriverId`
+/// queda como una proyección del estado vigente, por compatibilidad con las
+/// pantallas que hoy lo leen en un `include`; se eliminará cuando dejen de
+/// necesitarlo.
+///
+/// No lleva columna de estado. `endedAt` es lo único que decide si la
+/// asignación está vigente, y por eso los índices únicos parciales
+/// (`WHERE "endedAt" IS NULL`) no se pueden burlar: con una columna de estado
+/// aparte, una fila incoherente se escaparía del índice y habría dos vigentes.
+///
+///   vigente    = endedAt IS NULL
+///   finalizada = endedAt IS NOT NULL AND endReason <> 'CANCELLED'
+///   anulada    = endReason = 'CANCELLED'
+///
+/// Objetos SQL que Prisma no puede expresar y viven en la migración a mano:
+/// los dos índices únicos parciales y tres CHECK. No los borres al generar
+/// migraciones nuevas.
+model DriverAssignment {
+  id String @id @default(cuid())
+
+  /// Restrict, no Cascade: un vehículo o conductor con historial no se puede
+  /// borrar. La regla del producto es ARCHIVAR > BORRAR, y acá se hace cumplir
+  /// en la base y no en la aplicación.
+  truckId  String
+  truck    Truck  @relation(fields: [truckId], references: [id], onDelete: Restrict)
+  driverId String
+  driver   Driver @relation(fields: [driverId], references: [id], onDelete: Restrict)
+
+  /// NULL solo en filas migradas: no se inventa una fecha que no se conoce.
+  /// Lo garantiza el CHECK `chk_asignacion_inicio_obligatorio`.
+  startedAt DateTime?
+
+  /// Única fuente de verdad sobre la vigencia.
+  endedAt   DateTime?
+  endReason AssignmentEndReason?
+
+  source AssignmentSource @default(MANUAL)
+  notes  String?
+
+  /// Quién asignó y quién cerró. SetNull: si se borra el usuario se pierde el
+  /// nombre, nunca el hecho.
+  createdById String?
+  createdBy   User?   @relation("AsignacionCreada", fields: [createdById], references: [id], onDelete: SetNull)
+  endedById   String?
+  endedBy     User?   @relation("AsignacionCerrada", fields: [endedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([truckId, startedAt])
+  @@index([driverId, startedAt])
 }

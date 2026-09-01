@@ -140,12 +140,59 @@ export function optEnumOf<T extends string>(
   return value in values ? value : null;
 }
 
+/**
+ * Traduce las violaciones de las restricciones de asignación a español.
+ *
+ * Los nombres de los objetos salen del mensaje de Prisma, que los incluye en
+ * los tres casos aunque con comillas distintas:
+ *   P2002 → Unique constraint failed on the constraint: `nombre`
+ *   P2003 → Foreign key constraint violated on the constraint: `nombre`
+ *   P2039 → violates check constraint "nombre"
+ *
+ * Se busca en el texto y no en `meta`, porque en Prisma 7 con driver adapter
+ * el nombre queda anidado en `meta.driverAdapterError.cause.constraint.index`
+ * para P2002/P2003 pero solo dentro del mensaje original para los CHECK.
+ *
+ * IMPORTANTE: el error de un CHECK trae en `meta` la fila completa que falló,
+ * con todos sus valores. Por eso acá nunca se devuelve el texto crudo del
+ * error: o coincide con un caso conocido y se responde con un mensaje propio,
+ * o cae en el genérico de más abajo.
+ */
+const MENSAJES_RESTRICCION: Record<string, string> = {
+  asignacion_activa_unica_por_vehiculo:
+    "Este vehículo ya tiene un conductor asignado. Cerrá esa asignación antes de crear una nueva.",
+  asignacion_activa_unica_por_conductor:
+    "Esta persona ya está asignada a otro vehículo. Liberala de ese vehículo o transferila a este.",
+  chk_asignacion_cierre_coherente:
+    "No se pudo cerrar la asignación: hay que indicar el motivo del cierre.",
+  chk_asignacion_inicio_obligatorio:
+    "La asignación necesita una fecha de inicio.",
+  chk_asignacion_orden_fechas:
+    "La fecha de fin no puede ser anterior a la de inicio.",
+  DriverAssignment_driverId_fkey:
+    "Este conductor tiene historial de asignaciones. Archivalo en lugar de eliminarlo, para no perder la trazabilidad.",
+  DriverAssignment_truckId_fkey:
+    "Este vehículo tiene historial de asignaciones. Archivalo en lugar de eliminarlo, para no perder la trazabilidad.",
+};
+
+function mensajeDeRestriccion(mensaje: string): string | null {
+  for (const [nombre, texto] of Object.entries(MENSAJES_RESTRICCION)) {
+    if (mensaje.includes(nombre)) return texto;
+  }
+  return null;
+}
+
 /** Mensaje legible para el usuario a partir de un error de Prisma o propio. */
 export function toActionError(error: unknown): string {
   if (error instanceof ValidationError) return error.message;
   if (error instanceof Error) {
     // Los errores de subida ya traen un texto pensado para la persona.
     if (error.name === "UploadError") return error.message;
+    // Los de asignación también, y además llevan un código para la interfaz.
+    if (error.name === "AssignmentError") return error.message;
+
+    const porRestriccion = mensajeDeRestriccion(error.message);
+    if (porRestriccion) return porRestriccion;
     if (error.message.includes("Unique constraint")) {
       if (error.message.includes("plate"))
         return "Ya existe un camión con esa placa.";
