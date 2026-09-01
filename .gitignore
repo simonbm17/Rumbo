@@ -59,3 +59,8 @@ skills-lock.json
 
 # Salida de las pruebas
 /coverage
+
+# Respaldos de PostgreSQL. Hoy viven fuera del repositorio, pero la regla
+# evita que un `pg_dump` lanzado desde la raíz termine en un commit.
+*.dump
+*.sql.gz
