@@ -136,6 +136,46 @@ escondiendo botones.
 
 ---
 
+## Pruebas
+
+Red de seguridad mínima, no cobertura. Protege lo que un rediseño puede romper
+en silencio: los cálculos financieros, la sincronización de estados de flota,
+los permisos por rol y el contrato entre formularios y server actions.
+
+```bash
+npm test
+```
+
+Las de integración necesitan una base separada. Se prepara una sola vez:
+
+```bash
+docker exec rumbo-db psql -U rumbo -d postgres -c "CREATE DATABASE rumbo_test;"
+```
+
+Y un archivo `.env.test` (no se versiona, porque lleva credenciales):
+
+```
+DATABASE_URL="postgresql://rumbo:rumbo_dev_2026@localhost:5433/rumbo_test?schema=public"
+AUTH_SECRET="clave_solo_para_pruebas_0123456789abcdef0123456789abcdef"
+```
+
+Después, aplicar el esquema a esa base:
+
+```bash
+DATABASE_URL="postgresql://rumbo:rumbo_dev_2026@localhost:5433/rumbo_test?schema=public" npx prisma migrate deploy
+```
+
+`tests/helpers/db.ts` se niega a arrancar si la base no se llama `rumbo_test`:
+las pruebas hacen `TRUNCATE` de todas las tablas entre casos, y esa
+comprobación es lo que impide que borren los datos de desarrollo.
+
+### Lo que más importa
+
+`tests/contract/forms.test.ts` verifica, por cada entidad, que el formulario
+emita exactamente los `name` que la server action lee. Es la prueba que impide
+que renombrar un campo durante el rediseño rompa el guardado sin que nada
+avise. Está verificada por mutación: renombrar `name="plate"` la hace fallar.
+
 ## Seguridad
 
 Lo que está implementado y por qué. Si tocás alguna de estas piezas, sabé qué
