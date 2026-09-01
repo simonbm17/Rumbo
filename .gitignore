@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...salvo la plantilla, que sí debe viajar con el repositorio: es la única
+# documentación de qué variables hacen falta para levantar el proyecto.
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +42,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+
+# uploads subidos por el usuario (se conservan solo los de la demo)
+/public/uploads/*
+!/public/uploads/demo/
+
+# Herramientas de agentes copiadas por el editor. No son código del proyecto:
+# sin esto, el primer commit son 213 archivos de skills y 116 de código real.
+.claude/
+.windsurf/
+.agents/
+skills-lock.json
+
+# Salida de las pruebas
+/coverage

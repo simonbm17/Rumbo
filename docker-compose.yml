@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: rumbo-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rumbo
+      POSTGRES_PASSWORD: rumbo_dev_2026
+      POSTGRES_DB: rumbo
+    ports:
+      - "5433:5432"
+    volumes:
+      - rumbo-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rumbo -d rumbo"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  rumbo-pgdata:

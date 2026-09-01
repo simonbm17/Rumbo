@@ -1,0 +1,377 @@
+// Rumbo — Sistema de gestión de flotas
+// Documentación del esquema: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  ADMIN
+  MANAGER
+  VIEWER
+}
+
+enum TruckStatus {
+  ACTIVE
+  IN_TRIP
+  MAINTENANCE
+  INACTIVE
+}
+
+enum TruckKind {
+  TRACTOMULA
+  SENCILLO
+  DOBLETROQUE
+  TURBO
+  CISTERNA
+  REFRIGERADO
+  VOLQUETA
+  PLANCHON
+  FURGON
+  OTRO
+}
+
+enum DriverStatus {
+  ACTIVE
+  ON_TRIP
+  OFF_DUTY
+  INACTIVE
+}
+
+enum TripStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum CargoStatus {
+  PENDING
+  LOADED
+  DELIVERED
+  INCIDENT
+}
+
+enum CargoUnit {
+  KG
+  TON
+  M3
+  PALLET
+  UNIDAD
+  GALON
+}
+
+enum MaintenanceType {
+  PREVENTIVO
+  CORRECTIVO
+  REVISION
+  LLANTAS
+  CAMBIO_ACEITE
+  FRENOS
+  MOTOR
+  OTRO
+}
+
+enum MaintenanceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ExpenseCategory {
+  COMBUSTIBLE
+  PEAJE
+  ALIMENTACION
+  HOSPEDAJE
+  PARQUEADERO
+  MULTA
+  REPARACION
+  SEGURO
+  NOMINA
+  OTRO
+}
+
+enum DocumentType {
+  SOAT
+  TECNOMECANICA
+  SEGURO
+  TARJETA_OPERACION
+  LICENCIA_TRANSITO
+  LICENCIA_CONDUCCION
+  EXAMEN_MEDICO
+  CEDULA
+  PERMISO
+  OTRO
+}
+
+// ---------------------------------------------------------------------------
+// Acceso
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         Role      @default(VIEWER)
+  active       Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  activity ActivityLog[]
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  summary   String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model CompanySettings {
+  id             Int      @id @default(1)
+  name           String   @default("Mi Empresa de Transporte")
+  legalName      String?
+  taxId          String?
+  phone          String?
+  email          String?
+  address        String?
+  logoUrl        String?
+  currency       String   @default("COP")
+  currencyLocale String   @default("es-CO")
+  updatedAt      DateTime @default(now()) @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Flota
+// ---------------------------------------------------------------------------
+
+model Truck {
+  id            String      @id @default(cuid())
+  plate         String      @unique
+  nickname      String?
+  brand         String
+  model         String
+  year          Int
+  kind          TruckKind   @default(SENCILLO)
+  vin           String?
+  engineNumber  String?
+  color         String?
+  photoUrl      String?
+  status        TruckStatus @default(ACTIVE)
+  odometerKm    Int         @default(0)
+  capacityKg    Float?
+  axles         Int?
+  fuelType      String?
+  tankLiters    Float?
+  purchaseDate  DateTime?
+  purchasePrice Float?
+  notes         String?
+  archived      Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  currentDriverId String?
+  currentDriver   Driver? @relation("AssignedTruck", fields: [currentDriverId], references: [id], onDelete: SetNull)
+
+  trips        Trip[]
+  maintenances Maintenance[]
+  expenses     Expense[]
+  documents    Document[]
+
+  @@index([status])
+  @@index([archived])
+}
+
+model Driver {
+  id               String       @id @default(cuid())
+  firstName        String
+  lastName         String
+  documentId       String       @unique
+  phone            String?
+  email            String?
+  photoUrl         String?
+  licenseNumber    String?
+  licenseClass     String?
+  licenseExpiry    DateTime?
+  hireDate         DateTime?
+  status           DriverStatus @default(ACTIVE)
+  address          String?
+  emergencyContact String?
+  emergencyPhone   String?
+  notes            String?
+  archived         Boolean      @default(false)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  assignedTrucks Truck[]    @relation("AssignedTruck")
+  trips          Trip[]
+  expenses       Expense[]
+  documents      Document[]
+
+  @@index([status])
+  @@index([archived])
+}
+
+model Customer {
+  id          String   @id @default(cuid())
+  name        String
+  taxId       String?
+  contactName String?
+  phone       String?
+  email       String?
+  address     String?
+  city        String?
+  notes       String?
+  archived    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cargos Cargo[]
+}
+
+// ---------------------------------------------------------------------------
+// Operación
+// ---------------------------------------------------------------------------
+
+model Trip {
+  id               String     @id @default(cuid())
+  code             String     @unique
+  truckId          String
+  truck            Truck      @relation(fields: [truckId], references: [id], onDelete: Cascade)
+  driverId         String?
+  driver           Driver?    @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  origin           String
+  destination      String
+  departureAt      DateTime
+  plannedArrivalAt DateTime?
+  arrivalAt        DateTime?
+  startOdometerKm  Int?
+  endOdometerKm    Int?
+  distanceKm       Float?
+  status           TripStatus @default(PLANNED)
+  revenue          Float      @default(0)
+  notes            String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  cargos   Cargo[]
+  expenses Expense[]
+
+  @@index([status])
+  @@index([departureAt])
+  @@index([truckId])
+  // La ficha del conductor lista y agrega sus viajes; sin este índice era un
+  // recorrido completo de la tabla por cada visita.
+  @@index([driverId])
+}
+
+model Cargo {
+  id               String      @id @default(cuid())
+  tripId           String
+  trip             Trip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  customerId       String?
+  customer         Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  description      String
+  cargoType        String?
+  weight           Float       @default(0)
+  unit             CargoUnit   @default(KG)
+  quantity         Int?
+  declaredValue    Float?
+  freightCharge    Float?
+  pickupLocation   String?
+  deliveryLocation String?
+  status           CargoStatus @default(PENDING)
+  notes            String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([tripId])
+}
+
+model Maintenance {
+  id              String            @id @default(cuid())
+  truckId         String
+  truck           Truck             @relation(fields: [truckId], references: [id], onDelete: Cascade)
+  type            MaintenanceType   @default(PREVENTIVO)
+  title           String
+  description     String?
+  date            DateTime
+  odometerKm      Int?
+  cost            Float             @default(0)
+  workshop        String?
+  invoiceNumber   String?
+  status          MaintenanceStatus @default(COMPLETED)
+  nextServiceKm   Int?
+  nextServiceDate DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([truckId])
+  @@index([date])
+}
+
+model Expense {
+  id            String          @id @default(cuid())
+  truckId       String?
+  truck         Truck?          @relation(fields: [truckId], references: [id], onDelete: Cascade)
+  tripId        String?
+  trip          Trip?           @relation(fields: [tripId], references: [id], onDelete: SetNull)
+  driverId      String?
+  driver        Driver?         @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  category      ExpenseCategory @default(OTRO)
+  description   String?
+  amount        Float           @default(0)
+  date          DateTime
+  liters        Float?
+  pricePerLiter Float?
+  odometerKm    Int?
+  supplier      String?
+  invoiceNumber String?
+  receiptUrl    String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([truckId])
+  @@index([tripId])
+  @@index([date])
+  @@index([category])
+}
+
+model Document {
+  id        String       @id @default(cuid())
+  truckId   String?
+  truck     Truck?       @relation(fields: [truckId], references: [id], onDelete: Cascade)
+  driverId  String?
+  driver    Driver?      @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  type      DocumentType @default(OTRO)
+  number    String?
+  issuer    String?
+  issuedAt  DateTime?
+  expiresAt DateTime
+  fileUrl   String?
+  notes     String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([truckId])
+  @@index([driverId])
+  @@index([expiresAt])
+}

@@ -1,26 +1,377 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   SISTEMA DE DISEÑO
+
+   Tres reglas que gobiernan todo lo de abajo:
+
+   1. Legibilidad primero. El sistema lo usa gente que no es técnica y que
+      muchas veces pasa los 50. Ningún texto baja de 14px y todo par de
+      color/fondo llega al mínimo AA de 4.5:1 (verificado, no estimado).
+   2. Dos niveles de texto, no tres. Antes había un tercer nivel "tenue" que
+      quedaba en 2.3:1 de contraste: ilegible. Ahora `--text` y `--text-muted`
+      son los únicos colores de texto; `--icon-muted` existe solo para íconos
+      decorativos, que no cargan información.
+   3. Claro por defecto. El modo oscuro está disponible, pero se elige; no se
+      hereda del sistema operativo.
+---------------------------------------------------------------------------- */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+
+  /* Superficies */
+  --bg: #f2f5f8;
+  --surface: #ffffff;
+  --surface-2: #eef2f6;
+  --surface-hover: #e6ecf3;
+  --border: #dee4ec;
+  --border-control: #7d8b9d;
+
+  /* Texto — dos niveles, ambos ≥ 4.5:1 sobre cualquier superficie */
+  --text: #0d1521;
+  --text-muted: #4a5563;
+  --icon-muted: #6b7684;
+
+  /*
+    La marca es tinta, no un color.
+
+    Los siete tonos semánticos (verde disponible, azul en viaje, ámbar taller,
+    rojo vencido…) ya se reparten todo el color de la pantalla. Si la marca
+    también fuera un color, competiría con ellos: el azul de marca anterior era
+    el mismo azul que «en viaje», así que un botón primario y un estado se
+    leían igual. Con la marca en tinta el color queda reservado para informar,
+    nunca para decorar, y de paso el botón primario pasa de 7:1 a 16:1 de
+    contraste.
+  */
+  --brand: #152232;
+  --brand-hover: #26364b;
+  --brand-soft: #eaeef3;
+  --brand-text: #ffffff;
+
+  /* Barra lateral: capa neutra más oscura que el contenido */
+  --nav-bg: #131c2e;
+  --nav-text: #b9c5d8;
+  /* El ítem activo se invierte: superficie clara sobre la barra oscura. */
+  --nav-text-active: #131c2e;
+  --nav-hover: #1f2b44;
+  --nav-active: #f2f5f8;
+  --nav-border: #26334c;
+
+  --ring: #152232;
+  --shadow-card: 0 1px 2px rgb(13 21 33 / 0.06);
+  --shadow-raised: 0 4px 8px -2px rgb(13 21 33 / 0.10);
+  --shadow-pop: 0 12px 28px -8px rgb(13 21 33 / 0.22);
+
+  /* Estados semánticos: fondo tenue + texto oscuro del mismo tono */
+  --tone-green-bg: #e4f4ea;
+  --tone-green-fg: #116434;
+  --tone-blue-bg: #e7edfd;
+  --tone-blue-fg: #1a49c9;
+  --tone-amber-bg: #fbeed6;
+  --tone-amber-fg: #8a5000;
+  --tone-red-bg: #fce9e7;
+  --tone-red-fg: #a81e13;
+  --tone-slate-bg: #e9edf2;
+  --tone-slate-fg: #3f4b5c;
+  --tone-violet-bg: #ede7fb;
+  --tone-violet-fg: #5127ad;
+  --tone-teal-bg: #dcf2ef;
+  --tone-teal-fg: #0a5f56;
+
+  /*
+    Rojo de relleno, para cuando el peligro se pinta como fondo (el contador
+    de alertas, el botón de eliminar). No sirve `--tone-red-fg`: en el tema
+    oscuro ese rojo es claro, pensado para ir ENCIMA de un fondo oscuro, y
+    usarlo como fondo con texto blanco deja el texto en 1.9:1.
+  */
+  --danger-solid: #a81e13;
+  --danger-solid-text: #ffffff;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #101725;
+  --surface: #172033;
+  --surface-2: #1e2839;
+  --surface-hover: #253148;
+  --border: #2a3547;
+  --border-control: #64748f;
+
+  --text: #eef2f8;
+  --text-muted: #a3b1c6;
+  --icon-muted: #8593ab;
+
+  /* En oscuro la tinta se invierte: la acción primaria es la superficie clara. */
+  --brand: #e8eef7;
+  --brand-hover: #ffffff;
+  --brand-soft: #202c40;
+  --brand-text: #0b1220;
+
+  --nav-bg: #0b1220;
+  --nav-text: #9dabc2;
+  --nav-text-active: #0b1220;
+  --nav-hover: #1a2437;
+  --nav-active: #e8eef7;
+  --nav-border: #1c2739;
+
+  --ring: #e8eef7;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-raised: 0 4px 8px -2px rgb(0 0 0 / 0.5);
+  --shadow-pop: 0 12px 28px -8px rgb(0 0 0 / 0.65);
+
+  --tone-green-bg: #0f2e1d;
+  --tone-green-fg: #7fe0a6;
+  --tone-blue-bg: #16264a;
+  --tone-blue-fg: #9dbaff;
+  --tone-amber-bg: #37280c;
+  --tone-amber-fg: #f5c469;
+  --tone-red-bg: #3a1614;
+  --tone-red-fg: #ffa199;
+  --tone-slate-bg: #1b2536;
+  --tone-slate-fg: #aebbcf;
+  --tone-violet-bg: #231a45;
+  --tone-violet-fg: #c0a6ff;
+  --tone-teal-bg: #0d302c;
+  --tone-teal-fg: #6fdccd;
+
+  --danger-solid: #ffa199;
+  --danger-solid-text: #3a1614;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-hover: var(--surface-hover);
+  --color-border-base: var(--border);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-brand: var(--brand);
+
+  --font-sans: var(--font-sans-family), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-family), ui-monospace, monospace;
+
+  /*
+    Escala tipográfica fija (no fluida): en una herramienta de trabajo el texto
+    no debe cambiar de tamaño al angostar la ventana. Piso de 14px.
+  */
+  --text-sm: 0.875rem;      /* 14px — solo metadatos */
+  --text-sm--line-height: 1.45;
+  --text-base: 1rem;        /* 16px — texto y tablas */
+  --text-base--line-height: 1.55;
+  --text-lg: 1.125rem;      /* 18px — títulos de tarjeta */
+  --text-lg--line-height: 1.4;
+  --text-xl: 1.375rem;      /* 22px — encabezados de sección */
+  --text-xl--line-height: 1.3;
+  --text-2xl: 1.75rem;      /* 28px — título de página */
+  --text-2xl--line-height: 1.22;
+  --text-3xl: 2.5rem;       /* 40px — cifras destacadas */
+  --text-3xl--line-height: 1.1;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Escala de apilamiento con nombre: nada de 999 sueltos */
+:root {
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-backdrop: 30;
+  --z-drawer: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+
+  /* Altura mínima de cualquier control: 44px, el objetivo táctil accesible */
+  --control-h: 2.75rem;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur: 180ms;
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  /* Compensa la barra de scroll para que el layout no salte al navegar */
+  scrollbar-gutter: stable;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--brand);
+  color: var(--brand-text);
+}
+
+@supports (scrollbar-width: thin) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-control) transparent;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Componentes
+---------------------------------------------------------------------------- */
+
+@layer components {
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Controles de formulario: altura táctil y borde con contraste real (3:1) */
+  .input-base {
+    width: 100%;
+    min-height: var(--control-h);
+    background: var(--surface);
+    border: 1px solid var(--border-control);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    color: var(--text);
+    outline: none;
+    transition:
+      border-color var(--dur) var(--ease-out),
+      box-shadow var(--dur) var(--ease-out);
+  }
+  .input-base::placeholder {
+    color: var(--text-muted);
+  }
+  .input-base:focus-visible {
+    border-color: var(--ring);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 30%, transparent);
+  }
+  .input-base:disabled {
+    background: var(--surface-2);
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+
+  select.input-base {
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+      linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+    background-position: calc(100% - 18px) calc(50% + 1px),
+      calc(100% - 13px) calc(50% + 1px);
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+    padding-right: 2.25rem;
+  }
+
+  /*
+    Un solo estilo de foco en toda la app. Grueso y con doble anillo para que
+    se vea sobre cualquier fondo: quien navega con teclado no debe perderse.
+  */
+  .focus-ring:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /*
+    Menú lateral: fuera de pantalla en móvil hasta que se abre; fijo desde lg.
+    Va acá y no con utilidades `translate-x-*` porque dos utilidades de la
+    misma familia compiten por el orden del CSS generado, no por el orden en
+    el atributo class.
+  */
+  .app-nav {
+    translate: -100% 0;
+    transition: translate 220ms var(--ease-out);
+  }
+  .app-nav[data-open="true"] {
+    translate: 0 0;
+  }
+  @media (min-width: 1024px) {
+    .app-nav,
+    .app-nav[data-open="true"] {
+      translate: 0 0;
+    }
+  }
+
+  /* El botón de tema muestra un ícono u otro sin estado en JS */
+  .theme-when-dark {
+    display: none;
+  }
+  :root[data-theme="dark"] .theme-when-light {
+    display: none;
+  }
+  :root[data-theme="dark"] .theme-when-dark {
+    display: block;
+  }
+
+  /*
+    Superficie pulsable: tarjetas y filas que llevan a otra pantalla. El
+    levante en hover y el hundimiento al presionar dan la sensación física de
+    "esto se puede tocar", que es lo que hace falta cuando el usuario no
+    reconoce los patrones de una app.
+  */
+  .pressable {
+    transition:
+      transform var(--dur) var(--ease-out),
+      box-shadow var(--dur) var(--ease-out),
+      border-color var(--dur) var(--ease-out),
+      background-color var(--dur) var(--ease-out);
+  }
+  @media (hover: hover) {
+    .pressable:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-raised);
+      border-color: var(--border-control);
+    }
+  }
+  .pressable:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-card);
+  }
+}
+
+/* Sin flechitas en los campos numéricos */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  appearance: textfield;
+}
+
+/* Íconos de fecha visibles en modo oscuro */
+:root[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+:root[data-theme="dark"]
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+}
+
+/*
+  Movimiento reducido: quien lo pide no ve ninguna animación. Obligatorio,
+  no opcional.
+*/
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .pressable:hover {
+    transform: none;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
 }
