@@ -91,17 +91,55 @@ Lo que sí:
   microinteracciones que informan. Nada de coreografías al cargar: quien entra
   viene a trabajar.
 
-Decisiones ya tomadas del sistema visual:
+Decisiones ya tomadas del sistema visual (Fase V1, aprobada):
 
-- Tipografía **IBM Plex Sans + IBM Plex Mono**. No Geist: es el valor por
-  defecto de `create-next-app` y se nota.
-- **La marca es tinta (`#152232`), no un color.** Los siete tonos semánticos ya
-  se reparten todo el color de la pantalla; el azul de marca anterior era el
-  mismo azul que el estado «en viaje» y competía con él.
+- Tipografía **IBM Plex Sans + IBM Plex Mono** para operación, **Archivo** para
+  títulos y marca. No Geist: es el valor por defecto de `create-next-app` y se
+  nota. El contraste entre Archivo y Plex es de ancho, no de estilo.
+- **La acción primaria es tinta (`#0e1721`), no un color.** El azul de marca
+  anterior era el mismo azul que el estado «en viaje» y competía con él.
+- **`#0e4f5c` (petróleo) es identidad, nunca un estado.** Vive en la marca, el
+  ítem activo del menú, el anillo de foco y el conmutador de vista. Si empieza
+  a significar «bien» o «pendiente», se rompió la regla.
+- **Tres conceptos separados, que no se mezclan:**
+  - **Identidad** — `accent` `#0E4F5C`. Marca, foco, ítem activo, conmutador de
+    vista. **Nunca un estado.**
+  - **Semántica** — **cuatro familias**: `success`, `warning`, `danger`, `info`.
+    Cada una dice algo del mundo.
+  - **Neutro** — `neutral`. **No es una quinta familia semántica**: es la
+    ausencia de señal (programado, archivado, inactivo). Se llamaba `slate`;
+    un nombre de color invitaba a leerlo como una familia más.
 - **Tema claro por defecto**, sin heredar del sistema operativo. El oscuro se
   elige y se guarda.
-- Las placas se dibujan como placas (`components/ui/Plate.tsx`): es la
-  convención del dominio, no un adorno inventado.
+- El anillo de foco es el acento en todo el producto, **salvo dentro del menú**,
+  donde es blanco: sobre el fondo del menú el acento queda en 1,95:1 y
+  desaparece.
+- **La placa tiene UNA sola representación oficial**
+  (`components/ui/Plate.tsx`) y se muestra **tal como está guardada**, con su
+  guion. No se reformatea para que se vea mejor: quien busca `WGR-482` tiene que
+  ver `WGR-482`. Nunca va superpuesta sobre la fotografía, ni dibujada dentro de
+  las imágenes de ejemplo.
+- **El elemento firma es VENTANA + LECTURA**: la fotografía en 3:2 fijo sobre un
+  mantel neutro, y debajo la lectura en el orden en que se decide —placa,
+  estado, marca/línea/modelo/año, conductor, kilometraje, y la alerta solo si
+  existe—. Sin foto, la ventana declara el vacío; nunca un ícono genérico de
+  camión.
+- **`Section` reemplaza a `Card` como agrupador por defecto.** `Card` queda para
+  objetos que se abren: un vehículo, una persona.
+- El resumen de flota es **una franja**, no cuatro tarjetas de indicador. Sus
+  cifras son de la flota entera, porque además son el control de filtrado.
+- El menú es fijo desde **1024px** y cajón por debajo. No se colapsa a íconos:
+  sin etiqueta, la navegación dependería solo de un ícono.
+- **La vista «Tabla» cambia de forma, no de tamaño.** Desde 768px es una tabla
+  de verdad; por debajo es una **lista administrativa compacta**
+  (`VehicleList`): una fila por vehículo, a todo el ancho, con placa, estado,
+  identidad, conductor y kilometraje —y la alerta si existe—. No es una tarjeta
+  chica y no lleva fotografía: en móvil la vista de fichas es la que sirve para
+  reconocer; ésta sirve para administrar. **Nunca desplazamiento horizontal en
+  móvil.** Entre 768 y 1280 la tabla sí se desplaza, y se avisa con texto.
+- **Toda señal de estado lleva punto de color + palabra**, también sobre la
+  fotografía. Un recuadro gris idéntico para los cuatro estados obliga a leer;
+  el punto adelanta y la palabra confirma.
 
 ## Cómo se desarrolla
 
@@ -116,7 +154,10 @@ Decisiones ya tomadas del sistema visual:
 - **Verificar en el navegador.** Una pantalla no está terminada porque compile:
   hay que mirarla, medir su contraste y probarla en móvil.
 - Usar **frontend-design** para la dirección visual.
-- Usar **Playwright** para inspección real cuando esté disponible.
+- **Playwright no está instalado en este entorno.** La inspección real se hace
+  con las herramientas de navegador del agente: capturas por tamaño de pantalla
+  y medición del contraste, del tamaño de letra, del área táctil y del
+  desbordamiento sobre lo que el navegador realmente pinta.
 
 ## Git
 

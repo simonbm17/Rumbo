@@ -27,9 +27,9 @@ const LEVEL_ORDER: Record<AlertLevel, number> = {
 };
 
 export const ALERT_TONE: Record<AlertLevel, Tone> = {
-  expired: "red",
-  critical: "red",
-  warning: "amber",
+  expired: "danger",
+  critical: "danger",
+  warning: "warning",
 };
 
 export const ALERT_LABEL: Record<AlertLevel, string> = {

@@ -131,21 +131,21 @@ export default async function ExpensesPage({
           value={money(round2(totals._sum.amount ?? 0), true)}
           hint={`${total} movimientos`}
           icon={<Receipt className="size-5" />}
-          tone="amber"
+          tone="warning"
         />
         <StatCard
           label={`Gastado en ${startOfMonthLabel()}`}
           value={money(round2(monthTotal._sum.amount ?? 0), true)}
           hint="Mes en curso, toda la flota"
           icon={<Banknote className="size-5" />}
-          tone="red"
+          tone="danger"
         />
         <StatCard
           label="Combustible"
           value={money(round2(fuel._sum.amount ?? 0), true)}
           hint={`${new Intl.NumberFormat("es-CO").format(round2(fuel._sum.liters ?? 0))} litros`}
           icon={<Droplet className="size-5" />}
-          tone="blue"
+          tone="info"
         />
       </div>
 

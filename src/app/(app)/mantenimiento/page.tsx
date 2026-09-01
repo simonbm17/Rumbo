@@ -97,21 +97,21 @@ export default async function MaintenancePage({
           value={money(round2(totals._sum.cost ?? 0), true)}
           hint={`${total} registros`}
           icon={<Wrench className="size-5" />}
-          tone="amber"
+          tone="warning"
         />
         <StatCard
           label={`Gastado en ${startOfMonthLabel()}`}
           value={money(round2(monthTotal._sum.cost ?? 0), true)}
           hint="Mes en curso"
           icon={<Wrench className="size-5" />}
-          tone="red"
+          tone="danger"
         />
         <StatCard
           label="Servicios pendientes"
           value={scheduled}
           hint="Programados o en proceso"
           icon={<CalendarClock className="size-5" />}
-          tone="violet"
+          tone="neutral"
         />
       </div>
 

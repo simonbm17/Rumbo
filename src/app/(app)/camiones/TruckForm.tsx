@@ -57,14 +57,15 @@ export function TruckForm({
       <Card>
         <CardHeader
           title="Identificación"
-          description="Cómo vas a reconocer este camión dentro del sistema."
+          description="Cómo vas a reconocer este vehículo dentro del sistema."
         />
         <CardBody className="flex flex-col gap-5">
           <PhotoPicker
             name="photo"
             currentUrl={values?.photoUrl}
-            label="Foto del camión"
-            hint="Se muestra en el listado de la flota. JPG, PNG o WebP, máximo 5 MB."
+            label="Foto del vehículo"
+            guide="Tomala de costado, con el vehículo completo dentro del cuadro y de día. Así se reconoce en la lista de un vistazo."
+            hint="JPG, PNG o WebP, máximo 5 MB."
           />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

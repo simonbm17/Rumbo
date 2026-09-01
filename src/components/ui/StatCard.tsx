@@ -4,13 +4,11 @@ import { ArrowRight, TrendingDown, TrendingUp } from "lucide-react";
 import type { Tone } from "@/lib/labels";
 
 const TONE_FG: Record<Tone, string> = {
-  green: "var(--tone-green-fg)",
-  blue: "var(--tone-blue-fg)",
-  amber: "var(--tone-amber-fg)",
-  red: "var(--tone-red-fg)",
-  slate: "var(--tone-slate-fg)",
-  violet: "var(--tone-violet-fg)",
-  teal: "var(--tone-teal-fg)",
+  success: "var(--tone-success-fg)",
+  info: "var(--tone-info-fg)",
+  warning: "var(--tone-warning-fg)",
+  danger: "var(--tone-danger-fg)",
+  neutral: "var(--tone-neutral-fg)",
 };
 
 /**
@@ -25,7 +23,7 @@ export function StatCard({
   value,
   hint,
   icon,
-  tone = "blue",
+  tone = "info",
   trend,
   href,
 }: {
@@ -62,7 +60,7 @@ export function StatCard({
               className="inline-flex items-center gap-1 font-semibold"
               style={{
                 color:
-                  trend >= 0 ? "var(--tone-green-fg)" : "var(--tone-red-fg)",
+                  trend >= 0 ? "var(--tone-success-fg)" : "var(--tone-danger-fg)",
               }}
             >
               {trend >= 0 ? (

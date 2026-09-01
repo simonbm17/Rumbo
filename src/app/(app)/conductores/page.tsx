@@ -121,12 +121,12 @@ export default async function DriversPage({
               : null;
             const licenseTone =
               licenseDays === null
-                ? "slate"
+                ? "neutral"
                 : licenseDays < 0
-                  ? "red"
+                  ? "danger"
                   : licenseDays <= 30
-                    ? "amber"
-                    : "green";
+                    ? "warning"
+                    : "success";
 
             return (
               <Link
@@ -160,7 +160,7 @@ export default async function DriversPage({
                       <Badge
                         tone={
                           driver.archived
-                            ? "slate"
+                            ? "neutral"
                             : DRIVER_STATUS[driver.status].tone
                         }
                         dot

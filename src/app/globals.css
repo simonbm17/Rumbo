@@ -1,88 +1,111 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   SISTEMA DE DISEÑO
+   RUMBO — SISTEMA VISUAL
+   Dirección: Tablero. El vehículo es un objeto que se toma de una pared, no
+   una fila de base de datos. La firma del producto es la ficha con VENTANA
+   (la fotografía, para reconocer) y LECTURA (los datos, para decidir).
 
-   Tres reglas que gobiernan todo lo de abajo:
+   Cinco reglas que gobiernan todo lo de abajo:
 
-   1. Legibilidad primero. El sistema lo usa gente que no es técnica y que
-      muchas veces pasa los 50. Ningún texto baja de 14px y todo par de
-      color/fondo llega al mínimo AA de 4.5:1 (verificado, no estimado).
-   2. Dos niveles de texto, no tres. Antes había un tercer nivel "tenue" que
-      quedaba en 2.3:1 de contraste: ilegible. Ahora `--text` y `--text-muted`
-      son los únicos colores de texto; `--icon-muted` existe solo para íconos
-      decorativos, que no cargan información.
-   3. Claro por defecto. El modo oscuro está disponible, pero se elige; no se
-      hereda del sistema operativo.
+   1. La interfaz es gris para que los vehículos tengan color. Los camiones ya
+      son rojos, blancos y azules; si la interfaz compite, las fotos se pierden.
+      Grafito, un acento y cuatro señales. Nada más.
+   2. Cuatro familias semánticas, no siete. Violeta y turquesa no significaban
+      nada que el neutro no dijera y ocupaban el espacio que la marca necesita.
+   3. El acento es identidad, nunca estado. Aparece en foco, enlaces y
+      navegación activa. Si alguna vez marca un estado, se rompió el sistema.
+   4. Claro por defecto. El oscuro se elige y se guarda; no se hereda del
+      sistema operativo. La app es light-first.
+   5. Legibilidad: 16px de cuerpo, 14px solo para metadatos, 44px de alto en
+      todo lo que se toca, y AA verificado midiendo lo que el navegador pinta.
 ---------------------------------------------------------------------------- */
 
 :root {
   color-scheme: light;
 
-  /* Superficies */
-  --bg: #f2f5f8;
+  /* Superficies — neutro frío elegido, no gris por defecto */
+  --bg: #eff2f5;
   --surface: #ffffff;
-  --surface-2: #eef2f6;
-  --surface-hover: #e6ecf3;
-  --border: #dee4ec;
-  --border-control: #7d8b9d;
+  --surface-2: #e6ebf0;      /* mantel de fotografía, cabecera de tabla */
+  --surface-hover: #dfe6ed;
+  --border: #d5dde5;
+  --border-control: #7a8798;  /* 3,65:1 — los controles se ven, no se adivinan */
 
-  /* Texto — dos niveles, ambos ≥ 4.5:1 sobre cualquier superficie */
-  --text: #0d1521;
+  /* Texto — dos niveles, los dos por encima de 4,5:1 en cualquier superficie */
+  --text: #0e1721;
   --text-muted: #4a5563;
-  --icon-muted: #6b7684;
+  --icon-muted: #5f6b7a;      /* íconos y trazos; 4,5:1 incluso sobre surface-2 */
 
   /*
-    La marca es tinta, no un color.
-
-    Los siete tonos semánticos (verde disponible, azul en viaje, ámbar taller,
-    rojo vencido…) ya se reparten todo el color de la pantalla. Si la marca
-    también fuera un color, competiría con ellos: el azul de marca anterior era
-    el mismo azul que «en viaje», así que un botón primario y un estado se
-    leían igual. Con la marca en tinta el color queda reservado para informar,
-    nunca para decorar, y de paso el botón primario pasa de 7:1 a 16:1 de
-    contraste.
+    Acción primaria en tinta. No es un color de marca: es el máximo contraste
+    posible (18:1), que es lo que corresponde al botón que más se usa.
   */
-  --brand: #152232;
+  --brand: #0e1721;
   --brand-hover: #26364b;
-  --brand-soft: #eaeef3;
+  --brand-soft: #e6ebf0;
   --brand-text: #ffffff;
 
+  /*
+    ACENTO DE IDENTIDAD — petróleo. Lo único que es «de Rumbo».
+    Foco, enlaces, navegación activa, sitio público. Nunca un estado.
+  */
+  --accent: #0e4f5c;
+  --accent-hover: #0a3d47;
+  --on-accent: #ffffff;
+
   /* Barra lateral: capa neutra más oscura que el contenido */
-  --nav-bg: #131c2e;
-  --nav-text: #b9c5d8;
-  /* El ítem activo se invierte: superficie clara sobre la barra oscura. */
-  --nav-text-active: #131c2e;
-  --nav-hover: #1f2b44;
-  --nav-active: #f2f5f8;
-  --nav-border: #26334c;
+  --nav-bg: #101823;
+  --nav-text: #b6c2d1;
+  --nav-text-active: #ffffff;
+  --nav-hover: #1c2736;
+  --nav-active: #0e4f5c;      /* el acento marca dónde estás */
+  --nav-border: #232f3e;
 
-  --ring: #152232;
-  --shadow-card: 0 1px 2px rgb(13 21 33 / 0.06);
-  --shadow-raised: 0 4px 8px -2px rgb(13 21 33 / 0.10);
-  --shadow-pop: 0 12px 28px -8px rgb(13 21 33 / 0.22);
-
-  /* Estados semánticos: fondo tenue + texto oscuro del mismo tono */
-  --tone-green-bg: #e4f4ea;
-  --tone-green-fg: #116434;
-  --tone-blue-bg: #e7edfd;
-  --tone-blue-fg: #1a49c9;
-  --tone-amber-bg: #fbeed6;
-  --tone-amber-fg: #8a5000;
-  --tone-red-bg: #fce9e7;
-  --tone-red-fg: #a81e13;
-  --tone-slate-bg: #e9edf2;
-  --tone-slate-fg: #3f4b5c;
-  --tone-violet-bg: #ede7fb;
-  --tone-violet-fg: #5127ad;
-  --tone-teal-bg: #dcf2ef;
-  --tone-teal-fg: #0a5f56;
+  --ring: #0e4f5c;
+  --shadow-card: 0 1px 2px rgb(14 23 33 / 0.06);
+  --shadow-raised: 0 4px 8px -2px rgb(14 23 33 / 0.12);
+  --shadow-pop: 0 12px 28px -8px rgb(14 23 33 / 0.22);
 
   /*
-    Rojo de relleno, para cuando el peligro se pinta como fondo (el contador
-    de alertas, el botón de eliminar). No sirve `--tone-red-fg`: en el tema
-    oscuro ese rojo es claro, pensado para ir ENCIMA de un fondo oscuro, y
-    usarlo como fondo con texto blanco deja el texto en 1.9:1.
+    SEMÁNTICA — cuatro familias. Ni una más.
+    No incluye al acento (eso es identidad) ni al neutro (eso es su ausencia).
+  */
+  --tone-success-bg: #e2f2e7;
+  --tone-success-fg: #116434;
+  --tone-warning-bg: #fbeed6;
+  --tone-warning-fg: #8a5000;
+  --tone-danger-bg: #fbe8e6;
+  --tone-danger-fg: #a81e13;
+  --tone-info-bg: #e4eefb;
+  --tone-info-fg: #14539e;
+
+  /*
+    NEUTRO — no es una quinta familia semántica. Es lo que se usa cuando no hay
+    nada que señalar: programado, archivado, inactivo. Si algún día significa
+    algo, dejó de ser neutro.
+  */
+  --tone-neutral-bg: #e4e9ef;
+  --tone-neutral-fg: #3f4b5c;
+
+  /*
+    SEÑALES SOBRE FOTOGRAFÍA — no dependen del tema.
+    El recuadro de estado de la ficha vive sobre un velo oscuro tanto en claro
+    como en oscuro, así que necesita versiones claras de cada familia. Son las
+    mismas del tema oscuro, fijadas acá para que no cambien con el tema.
+    La palabra sigue yendo en blanco (4,88:1 garantizado sobre cualquier foto);
+    el punto solo refuerza, nunca es el único portador del estado.
+  */
+  --tone-success-bright: #74dc9e;
+  --tone-warning-bright: #f0bf68;
+  --tone-danger-bright: #ff9f97;
+  --tone-info-bright: #8fbcff;
+  --tone-neutral-bright: #cbd5e1;
+
+  /*
+    Rojo de relleno, para cuando el peligro se pinta como fondo. No sirve
+    `--tone-danger-fg`: en el tema oscuro ese rojo es claro, pensado para ir
+    ENCIMA de un fondo oscuro, y como fondo con texto blanco da 1,9:1.
   */
   --danger-solid: #a81e13;
   --danger-solid-text: #ffffff;
@@ -91,52 +114,55 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --bg: #101725;
-  --surface: #172033;
-  --surface-2: #1e2839;
+  --bg: #0d1420;
+  --surface: #151e2c;
+  --surface-2: #1d2836;
   --surface-hover: #253148;
-  --border: #2a3547;
+  --border: #28323f;
   --border-control: #64748f;
 
-  --text: #eef2f8;
-  --text-muted: #a3b1c6;
+  --text: #eaf0f6;
+  --text-muted: #a2afc0;
   --icon-muted: #8593ab;
 
-  /* En oscuro la tinta se invierte: la acción primaria es la superficie clara. */
-  --brand: #e8eef7;
+  /* En oscuro la acción primaria se invierte: la superficie clara es el botón */
+  --brand: #eaf0f6;
   --brand-hover: #ffffff;
   --brand-soft: #202c40;
   --brand-text: #0b1220;
 
-  --nav-bg: #0b1220;
-  --nav-text: #9dabc2;
-  --nav-text-active: #0b1220;
-  --nav-hover: #1a2437;
-  --nav-active: #e8eef7;
-  --nav-border: #1c2739;
+  --accent: #5fc3d6;
+  --accent-hover: #86d6e5;
+  --on-accent: #08151a;
 
-  --ring: #e8eef7;
+  --nav-bg: #080e18;
+  --nav-text: #9dabc2;
+  --nav-text-active: #ffffff;
+  --nav-hover: #16202f;
+  --nav-active: #0e4f5c;
+  --nav-border: #1a2432;
+
+  --ring: #5fc3d6;
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
   --shadow-raised: 0 4px 8px -2px rgb(0 0 0 / 0.5);
   --shadow-pop: 0 12px 28px -8px rgb(0 0 0 / 0.65);
 
-  --tone-green-bg: #0f2e1d;
-  --tone-green-fg: #7fe0a6;
-  --tone-blue-bg: #16264a;
-  --tone-blue-fg: #9dbaff;
-  --tone-amber-bg: #37280c;
-  --tone-amber-fg: #f5c469;
-  --tone-red-bg: #3a1614;
-  --tone-red-fg: #ffa199;
-  --tone-slate-bg: #1b2536;
-  --tone-slate-fg: #aebbcf;
-  --tone-violet-bg: #231a45;
-  --tone-violet-fg: #c0a6ff;
-  --tone-teal-bg: #0d302c;
-  --tone-teal-fg: #6fdccd;
+  /* SEMÁNTICA — las mismas cuatro familias, reajustadas para fondo oscuro */
+  --tone-success-bg: #0e2c1c;
+  --tone-success-fg: #74dc9e;
+  --tone-warning-bg: #31240c;
+  --tone-warning-fg: #f0bf68;
+  --tone-danger-bg: #351514;
+  --tone-danger-fg: #ff9f97;
+  --tone-info-bg: #122644;
+  --tone-info-fg: #8fbcff;
 
-  --danger-solid: #ffa199;
-  --danger-solid-text: #3a1614;
+  /* NEUTRO */
+  --tone-neutral-bg: #1b2536;
+  --tone-neutral-fg: #aebbcf;
+
+  --danger-solid: #ff9f97;
+  --danger-solid-text: #351514;
 }
 
 @theme inline {
@@ -148,29 +174,32 @@
   --color-text: var(--text);
   --color-text-muted: var(--text-muted);
   --color-brand: var(--brand);
+  --color-accent: var(--accent);
 
+  /*
+    Archivo para títulos, IBM Plex Sans para lectura, IBM Plex Mono para datos.
+    El contraste entre Archivo y Plex es de ANCHO, no de estilo, que es un eje
+    legítimo de emparejamiento y evita que se lean como dos sans cualquiera.
+  */
+  --font-display: var(--font-display-family), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-sans-family), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono-family), ui-monospace, monospace;
 
-  /*
-    Escala tipográfica fija (no fluida): en una herramienta de trabajo el texto
-    no debe cambiar de tamaño al angostar la ventana. Piso de 14px.
-  */
-  --text-sm: 0.875rem;      /* 14px — solo metadatos */
+  /* Escala fija: en una herramienta de trabajo el texto no cambia de tamaño */
+  --text-sm: 0.875rem;      /* 14px — SOLO metadatos y texto secundario */
   --text-sm--line-height: 1.45;
-  --text-base: 1rem;        /* 16px — texto y tablas */
+  --text-base: 1rem;        /* 16px — cuerpo y tablas. La base de lectura. */
   --text-base--line-height: 1.55;
-  --text-lg: 1.125rem;      /* 18px — títulos de tarjeta */
+  --text-lg: 1.125rem;      /* 18px */
   --text-lg--line-height: 1.4;
-  --text-xl: 1.375rem;      /* 22px — encabezados de sección */
+  --text-xl: 1.375rem;      /* 22px */
   --text-xl--line-height: 1.3;
   --text-2xl: 1.75rem;      /* 28px — título de página */
-  --text-2xl--line-height: 1.22;
-  --text-3xl: 2.5rem;       /* 40px — cifras destacadas */
+  --text-2xl--line-height: 1.2;
+  --text-3xl: 2.25rem;      /* 36px — cifras destacadas */
   --text-3xl--line-height: 1.1;
 }
 
-/* Escala de apilamiento con nombre: nada de 999 sueltos */
 :root {
   --z-dropdown: 10;
   --z-sticky: 20;
@@ -179,11 +208,15 @@
   --z-modal: 50;
   --z-toast: 60;
 
-  /* Altura mínima de cualquier control: 44px, el objetivo táctil accesible */
-  --control-h: 2.75rem;
+  --control-h: 2.75rem;      /* 44px, el objetivo táctil accesible */
+
+  /* Radios contenidos: 4 en controles, 6 en fichas. Nada de 16 ni 20. */
+  --r-control: 0.25rem;
+  --r-surface: 0.375rem;
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --dur: 180ms;
+  --dur-slow: 240ms;
 }
 
 * {
@@ -191,7 +224,6 @@
 }
 
 html {
-  /* Compensa la barra de scroll para que el layout no salte al navegar */
   scrollbar-gutter: stable;
 }
 
@@ -204,8 +236,8 @@ body {
 }
 
 ::selection {
-  background: var(--brand);
-  color: var(--brand-text);
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 @supports (scrollbar-width: thin) {
@@ -220,20 +252,24 @@ body {
 ---------------------------------------------------------------------------- */
 
 @layer components {
+  /*
+    La tarjeta se reserva a objetos que se toman y se abren: un vehículo, una
+    persona. Para agrupar texto o una tabla existe `Section`, que es espacio y
+    una regla. Si todo es una tarjeta, nada destaca.
+  */
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 0.75rem;
+    border-radius: var(--r-surface);
     box-shadow: var(--shadow-card);
   }
 
-  /* Controles de formulario: altura táctil y borde con contraste real (3:1) */
   .input-base {
     width: 100%;
     min-height: var(--control-h);
     background: var(--surface);
     border: 1px solid var(--border-control);
-    border-radius: 0.5rem;
+    border-radius: var(--r-control);
     padding: 0.5rem 0.75rem;
     font-size: 1rem;
     color: var(--text);
@@ -247,7 +283,7 @@ body {
   }
   .input-base:focus-visible {
     border-color: var(--ring);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 30%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 28%, transparent);
   }
   .input-base:disabled {
     background: var(--surface-2);
@@ -267,27 +303,96 @@ body {
   }
 
   /*
-    Un solo estilo de foco en toda la app. Grueso y con doble anillo para que
-    se vea sobre cualquier fondo: quien navega con teclado no debe perderse.
+    Un solo estilo de foco en todo el producto, en el color del acento.
+
+    El color se fija SIEMPRE, no solo al enfocar. Tailwind v4 incluye
+    `outline-color` dentro de `transition-colors`, así que en los controles que
+    la usan el anillo salía animándose desde `currentColor` hasta el acento
+    durante 180ms: en el botón primario y en el conmutador activo, cuyo texto es
+    blanco, el anillo empezaba en blanco sobre fondo claro —1,12:1 medido a
+    mitad de la transición—. Declarando el color en reposo no hay diferencia que
+    animar y el anillo aparece ya correcto. Lo invisible sigue siendo el trazo,
+    que solo se dibuja al enfocar.
   */
+  .focus-ring {
+    outline-color: var(--ring);
+  }
   .focus-ring:focus-visible {
-    outline: 2px solid var(--ring);
+    outline: 2px solid;
     outline-offset: 2px;
   }
 
   /*
-    Menú lateral: fuera de pantalla en móvil hasta que se abre; fijo desde lg.
-    Va acá y no con utilidades `translate-x-*` porque dos utilidades de la
-    misma familia compiten por el orden del CSS generado, no por el orden en
-    el atributo class.
+    Salvo dentro del menú. Ahí el fondo es casi negro y el acento queda en
+    1,95:1 contra él: medido, el anillo prácticamente desaparece y quien navega
+    con teclado pierde de vista dónde está. En blanco da 17:1 sobre el fondo del
+    menú y 9,7:1 sobre el ítem activo. El color de identidad no vale un
+    indicador de foco invisible.
+  */
+  .app-nav .focus-ring,
+  .app-nav .focus-ring:focus-visible {
+    outline-color: #ffffff;
+  }
+
+  /*
+    VENTANA — el marco de la fotografía.
+    Relación fija 3:2 sobre un mantel neutro: una foto con cielo blanco y otra
+    tomada en una bodega oscura ocupan el mismo espacio y no desalinean la
+    grilla. El marco es un borde de 1px, nunca una textura ni un bisel: si
+    empieza a parecer un objeto de madera, nos fuimos de la dirección.
+  */
+  .window {
+    position: relative;
+    aspect-ratio: 3 / 2;
+    overflow: hidden;
+    background: var(--surface-2);
+  }
+  .window > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+  }
+  /*
+    Degradado corto anclado abajo, solo donde se superpone el estado. Es un
+    recurso de legibilidad sobre fotos impredecibles, no un efecto.
+  */
+    /*
+    Velo corto al pie de la ventana. No es el que garantiza el contraste —de eso
+    se encarga el propio recuadro del estado, que sobre la foto más clara
+    posible deja el texto blanco en 4,88:1— sino el que evita que ese recuadro
+    aterrice como un rectángulo negro sobre una foto clara. Era del 42% al 0,62
+    y ensuciaba las fotos de día; al 30% y 0,45 hace su trabajo sin verse.
+  */
+  .window-scrim::after {
+    content: ""; position: absolute; inset: auto 0 0 0; height: 30%;
+    background: linear-gradient(to top, rgb(6 12 18 / 0.45), transparent);
+    pointer-events: none;
+  }
+
+  /*
+    Menú lateral: fuera de pantalla en móvil, íconos en tablet, completo desde
+    xl. Va acá y no con utilidades `translate-x-*` porque dos utilidades de la
+    misma familia compiten por el orden del CSS generado.
   */
   .app-nav {
     translate: -100% 0;
-    transition: translate 220ms var(--ease-out);
+    transition: translate var(--dur-slow) var(--ease-out);
   }
   .app-nav[data-open="true"] {
     translate: 0 0;
   }
+  /*
+    El menú se vuelve fijo a partir de 1024px, no de 768.
+
+    Evalué colapsarlo a una franja de íconos en tableta y lo descarté: sin
+    etiqueta, la navegación pasa a depender solo de un ícono, que es justo lo
+    que este producto no hace. Y un menú permanente de 240px sobre una tableta
+    en vertical deja 528px de contenido, menos de lo que necesita una ficha con
+    fotografía. Debajo de 1024px el menú es un cajón y el contenido usa el ancho
+    completo.
+  */
   @media (min-width: 1024px) {
     .app-nav,
     .app-nav[data-open="true"] {
@@ -295,7 +400,99 @@ body {
     }
   }
 
-  /* El botón de tema muestra un ícono u otro sin estado en JS */
+  /*
+    Fichas / tabla. Va en CSS y no en `style` para poder tener :hover, que un
+    atributo de estilo en línea no puede expresar.
+  */
+  .view-toggle-option {
+    background: var(--surface);
+    color: var(--text-muted);
+  }
+  .view-toggle-option:hover {
+    background: var(--surface-hover);
+    color: var(--text);
+  }
+  .view-toggle-option[data-activa="true"] {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+  .view-toggle-option[data-activa="true"]:hover {
+    background: var(--accent-hover);
+    color: var(--on-accent);
+  }
+
+  /*
+    CELDA ELÁSTICA — para las columnas de la tabla cuyo contenido no tiene
+    longitud previsible: el vehículo y el conductor.
+
+    «Mercedes-Benz Actros 2645» o «Alejandro José Rodríguez Martínez» no caben
+    en una tableta, y las tres salidas posibles eran malas: desplazar de lado,
+    partir el nombre en dos líneas —que descuadra las filas— o encoger la letra.
+    Se recorta con puntos suspensivos y se conserva el valor entero, que sigue
+    en el DOM para el lector de pantalla.
+
+    El recorte necesita `max-width: 0` en la celda: sin eso la tabla se
+    dimensiona al contenido mínimo del texto y `overflow: hidden` no tiene nada
+    que recortar. El ancho real lo reparte el porcentaje.
+
+    Al pasar el ratón por encima —o al enfocar con teclado la fila, que es lo
+    que hace `:focus-within`— el texto se muestra completo, sobre el fondo de la
+    superficie, por encima de la celda vecina. La fila no cambia de altura
+    porque nunca deja de ser una sola línea.
+  */
+  /*
+    `max-width: 0` es lo que permite recortar dentro de una tabla: sin él, la
+    tabla se dimensiona al contenido mínimo del texto y no hay nada que cortar.
+    Los porcentajes reparten el ancho que queda tras las columnas fijas.
+
+    Va en TODOS los anchos, también a 1440. Probé limitarlo a menos de 1400
+    —«si hay sitio, que se lea entero»— y medido con datos reales fue peor: con
+    «Mercedes-Benz Actros 2645» y «Alejandro José Rodríguez Martínez» la tabla
+    pedía 1245px contra 1124 disponibles y reaparecía el desplazamiento lateral
+    justo en la pantalla grande.
+
+    El reparto está calculado sobre la altura de fila, no sobre el ancho. A 1440
+    quedan 550px para las tres columnas elásticas y los tres datos completos
+    piden 816: algo tiene que ceder. Ceden el vehículo y el conductor, que
+    recortan y conservan el valor en `title`; NO cede la alerta, porque es una
+    frase con una fecha dentro y unos puntos suspensivos ahí esconden el plazo.
+    A la alerta se le da el 42% —231px— que es lo que necesita la más larga
+    («Reparación de caja de velocidades en 6 días») para caber en DOS líneas. Y
+    dos líneas de 14px entran en la fila de 65px que ya fija la miniatura de
+    44px, así que la tabla no se descuadra. Con menos ancho pasaba a tres líneas
+    y las filas salían de 65, 82 y 102px.
+  */
+  .celda-elastica {
+    max-width: 0;
+  }
+  .col-vehiculo {
+    width: 32%;
+  }
+  .col-conductor {
+    width: 26%;
+  }
+  .col-alertas {
+    width: 42%;
+  }
+
+  .texto-recortado {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .texto-recortado:hover,
+  tr:focus-within .texto-recortado {
+    position: relative;
+    z-index: var(--z-dropdown);
+    overflow: visible;
+    width: max-content;
+    max-width: none;
+    background: var(--surface);
+    border-radius: var(--r-control);
+    box-shadow: 0 0 0 4px var(--surface);
+  }
+
   .theme-when-dark {
     display: none;
   }
@@ -307,17 +504,14 @@ body {
   }
 
   /*
-    Superficie pulsable: tarjetas y filas que llevan a otra pantalla. El
-    levante en hover y el hundimiento al presionar dan la sensación física de
-    "esto se puede tocar", que es lo que hace falta cuando el usuario no
-    reconoce los patrones de una app.
+    Superficie pulsable: fichas y filas que llevan a otra pantalla. El levante
+    dice «esto se abre». 2px es suficiente: más ya es decoración.
   */
   .pressable {
     transition:
       transform var(--dur) var(--ease-out),
       box-shadow var(--dur) var(--ease-out),
-      border-color var(--dur) var(--ease-out),
-      background-color var(--dur) var(--ease-out);
+      border-color var(--dur) var(--ease-out);
   }
   @media (hover: hover) {
     .pressable:hover {
@@ -332,7 +526,6 @@ body {
   }
 }
 
-/* Sin flechitas en los campos numéricos */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
   appearance: none;
@@ -342,17 +535,12 @@ input[type="number"] {
   appearance: textfield;
 }
 
-/* Íconos de fecha visibles en modo oscuro */
 :root[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
 :root[data-theme="dark"]
   input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   filter: invert(0.8);
 }
 
-/*
-  Movimiento reducido: quien lo pide no ve ninguna animación. Obligatorio,
-  no opcional.
-*/
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

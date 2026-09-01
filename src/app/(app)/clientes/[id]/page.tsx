@@ -68,7 +68,7 @@ export default async function CustomerDetailPage({
         title={
           <span className="flex flex-wrap items-center gap-3">
             {customer.name}
-            {customer.archived && <Badge tone="slate">Archivado</Badge>}
+            {customer.archived && <Badge tone="neutral">Archivado</Badge>}
           </span>
         }
         description={customer.taxId ? `NIT ${customer.taxId}` : undefined}
@@ -84,27 +84,27 @@ export default async function CustomerDetailPage({
           label="Cargas transportadas"
           value={customer.cargos.length}
           icon={<Package className="size-5" />}
-          tone="violet"
+          tone="neutral"
         />
         <StatCard
           label="Viajes"
           value={trips}
           icon={<Route className="size-5" />}
-          tone="blue"
+          tone="info"
         />
         <StatCard
           label="Facturado"
           value={money(billed, true)}
           hint="Suma de fletes por carga"
           icon={<Banknote className="size-5" />}
-          tone="green"
+          tone="success"
         />
         <StatCard
           label="Valor declarado"
           value={money(declared, true)}
           hint="Mercancía transportada"
           icon={<Building2 className="size-5" />}
-          tone="teal"
+          tone="success"
         />
       </div>
 

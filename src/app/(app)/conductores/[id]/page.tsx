@@ -96,7 +96,7 @@ export default async function DriverDetailPage({
           <span className="flex flex-wrap items-center gap-3">
             {fullName(driver)}
             <Badge
-              tone={driver.archived ? "slate" : DRIVER_STATUS[driver.status].tone}
+              tone={driver.archived ? "neutral" : DRIVER_STATUS[driver.status].tone}
               dot
             >
               {driver.archived
@@ -204,10 +204,10 @@ export default async function DriverDetailPage({
                   <Badge
                     tone={
                       licenseDays < 0
-                        ? "red"
+                        ? "danger"
                         : licenseDays <= 30
-                          ? "amber"
-                          : "green"
+                          ? "warning"
+                          : "success"
                     }
                   >
                     {relativeDays(licenseDays)}
@@ -242,25 +242,25 @@ export default async function DriverDetailPage({
             label="Viajes realizados"
             value={driver._count.trips}
             icon={<Route className="size-5" />}
-            tone="violet"
+            tone="neutral"
           />
           <StatCard
             label="Kilómetros recorridos"
             value={km(round2(distance._sum.distanceKm ?? 0))}
             icon={<TruckIcon className="size-5" />}
-            tone="blue"
+            tone="info"
           />
           <StatCard
             label="Facturación generada"
             value={money(round2(totals._sum.revenue ?? 0), true)}
             icon={<Banknote className="size-5" />}
-            tone="green"
+            tone="success"
           />
           <StatCard
             label="Gastos a su nombre"
             value={money(round2(expenses._sum.amount ?? 0), true)}
             icon={<IdCard className="size-5" />}
-            tone="amber"
+            tone="warning"
           />
 
           {driver.assignedTrucks.length > 0 && (

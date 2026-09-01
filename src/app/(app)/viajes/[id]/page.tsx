@@ -158,21 +158,21 @@ export default async function TripDetailPage({
           value={money(trip.revenue, true)}
           hint={`${trip.cargos.length} carga${trip.cargos.length === 1 ? "" : "s"}`}
           icon={<Banknote className="size-5" />}
-          tone="green"
+          tone="success"
         />
         <StatCard
           label="Gastos del viaje"
           value={money(gastos, true)}
           hint={`${trip.expenses.length} movimientos`}
           icon={<Package className="size-5" />}
-          tone="amber"
+          tone="warning"
         />
         <StatCard
           label="Ganancia"
           value={money(utilidad, true)}
           hint={margen !== null ? `Margen ${percent(margen)}` : "Sin flete cargado"}
           icon={<TrendingUp className="size-5" />}
-          tone={utilidad >= 0 ? "teal" : "red"}
+          tone={utilidad >= 0 ? "success" : "danger"}
         />
         <StatCard
           label="Distancia"
@@ -183,7 +183,7 @@ export default async function TripDetailPage({
               : "Sin recorrido registrado"
           }
           icon={<Gauge className="size-5" />}
-          tone="blue"
+          tone="info"
         />
       </div>
 

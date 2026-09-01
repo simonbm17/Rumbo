@@ -33,7 +33,7 @@ export function Field({
       </label>
       {children}
       {error ? (
-        <p className="flex items-center gap-1.5 text-sm font-medium text-[var(--tone-red-fg)]">
+        <p className="flex items-center gap-1.5 text-sm font-medium text-[var(--tone-danger-fg)]">
           <AlertCircle className="size-4 shrink-0" aria-hidden />
           {error}
         </p>
@@ -78,7 +78,7 @@ export function FormError({ message }: { message?: string | null }) {
   return (
     <div
       className="flex items-start gap-2.5 rounded-lg px-4 py-3 font-medium"
-      style={{ background: "var(--tone-red-bg)", color: "var(--tone-red-fg)" }}
+      style={{ background: "var(--tone-danger-bg)", color: "var(--tone-danger-fg)" }}
       role="alert"
     >
       <AlertCircle className="mt-0.5 size-5 shrink-0" aria-hidden />

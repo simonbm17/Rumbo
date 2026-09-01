@@ -29,8 +29,8 @@ export function CompanyForm({ values }: { values: CompanyValues }) {
         <div
           className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm"
           style={{
-            background: "var(--tone-green-bg)",
-            color: "var(--tone-green-fg)",
+            background: "var(--tone-success-bg)",
+            color: "var(--tone-success-fg)",
           }}
           role="status"
         >

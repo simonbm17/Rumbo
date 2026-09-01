@@ -125,28 +125,28 @@ export default async function ReportsPage({
           label="Ingresos"
           value={money(ingresos, true)}
           icon={<Banknote className="size-5" />}
-          tone="green"
+          tone="success"
         />
         <StatCard
           label="Gastos"
           value={money(gastos, true)}
           hint="Operación más taller"
           icon={<TruckIcon className="size-5" />}
-          tone="amber"
+          tone="warning"
         />
         <StatCard
           label="Ganancia"
           value={money(utilidad, true)}
           hint={margen !== null ? `Margen ${percent(margen)}` : undefined}
           icon={<TrendingUp className="size-5" />}
-          tone={utilidad >= 0 ? "teal" : "red"}
+          tone={utilidad >= 0 ? "success" : "danger"}
         />
         <StatCard
           label="Combustible"
           value={money(fuelCost, true)}
           hint={`${number(liters)} litros`}
           icon={<Fuel className="size-5" />}
-          tone="blue"
+          tone="info"
         />
       </div>
 
@@ -222,8 +222,8 @@ export default async function ReportsPage({
                   style={{
                     color:
                       truck.utilidad >= 0
-                        ? "var(--tone-green-fg)"
-                        : "var(--tone-red-fg)",
+                        ? "var(--tone-success-fg)"
+                        : "var(--tone-danger-fg)",
                   }}
                 >
                   {money(truck.utilidad, true)}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, Menu, Moon, Sun, Truck as TruckIcon, X } from "lucide-react";
+import { LogOut, Menu, Moon, Sun, X } from "lucide-react";
 import { NAV, isActive } from "./nav";
 import type { Role } from "@/generated/prisma/enums";
 import { ROLE } from "@/lib/labels";
@@ -45,7 +45,7 @@ export function Shell({
       */}
       <aside
         data-open={open}
-        className="app-nav fixed inset-y-0 left-0 z-[var(--z-drawer)] flex w-72 flex-col border-r"
+        className="app-nav fixed inset-y-0 left-0 z-[var(--z-drawer)] flex w-60 flex-col border-r"
         style={{
           background: "var(--nav-bg)",
           borderColor: "var(--nav-border)",
@@ -55,24 +55,29 @@ export function Shell({
           className="flex h-16 shrink-0 items-center justify-between gap-2 border-b px-4"
           style={{ borderColor: "var(--nav-border)" }}
         >
+          {/*
+            La marca es el nombre, no un ícono de camión dentro de un cuadro.
+            Un pictograma de camión no distingue a esta empresa de ninguna otra
+            del sector; el nombre sí. La barra de acento a la izquierda ancla el
+            bloque y es el único uso del color de identidad en el menú.
+          */}
           <Link
             href="/"
             onClick={close}
-            className="flex min-w-0 items-center gap-3 rounded-lg focus-ring"
+            className="flex min-h-11 min-w-0 items-center gap-3 rounded-[var(--r-control)] focus-ring"
           >
             <span
-              className="flex size-10 shrink-0 items-center justify-center rounded-xl text-white"
+              className="h-7 w-1 shrink-0 rounded-full"
               style={{ background: "var(--nav-active)" }}
-            >
-              <TruckIcon className="size-5" aria-hidden />
-            </span>
-            <span className="min-w-0 truncate text-lg font-semibold text-white">
+              aria-hidden
+            />
+            <span className="font-display min-w-0 truncate text-xl font-semibold tracking-tight text-white">
               {companyName}
             </span>
           </Link>
           <button
             onClick={close}
-            className="flex size-10 items-center justify-center rounded-lg text-white/75 hover:bg-white/10 hover:text-white lg:hidden focus-ring"
+            className="flex size-10 items-center justify-center rounded-[var(--r-control)] text-white/75 hover:bg-white/10 hover:text-white lg:hidden focus-ring"
             aria-label="Cerrar menú"
           >
             <X className="size-6" aria-hidden />
@@ -103,7 +108,7 @@ export function Shell({
                           href={item.href}
                           onClick={close}
                           aria-current={active ? "page" : undefined}
-                          className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 font-medium transition-colors focus-ring"
+                          className="flex min-h-11 items-center gap-3 rounded-[var(--r-control)] px-3 py-2.5 font-medium transition-colors focus-ring"
                           style={{
                             background: active
                               ? "var(--nav-active)"
@@ -159,7 +164,7 @@ export function Shell({
                 type="submit"
                 title="Cerrar sesión"
                 aria-label="Cerrar sesión"
-                className="flex size-10 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-ring"
+                className="flex size-11 items-center justify-center rounded-[var(--r-control)] text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-ring"
               >
                 <LogOut className="size-5" aria-hidden />
               </button>
@@ -168,7 +173,7 @@ export function Shell({
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col lg:pl-72">
+      <div className="flex min-w-0 flex-1 flex-col lg:pl-60">
         {/*
           Barra superior opaca. Antes era translúcida con desenfoque: el texto
           que pasaba por debajo se leía a través y bajaba el contraste.
@@ -176,7 +181,7 @@ export function Shell({
         <header className="sticky top-0 z-[var(--z-sticky)] flex h-16 shrink-0 items-center gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-4 no-print sm:px-6">
           <button
             onClick={() => setOpen(true)}
-            className="flex size-11 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] lg:hidden focus-ring"
+            className="flex size-11 items-center justify-center rounded-[var(--r-control)] text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] lg:hidden focus-ring"
             aria-label="Abrir menú"
           >
             <Menu className="size-6" aria-hidden />
@@ -214,7 +219,7 @@ function ThemeToggle() {
   return (
     <button
       onClick={toggle}
-      className="flex h-11 items-center gap-2 rounded-lg border border-[var(--border-control)] px-3 font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text)] focus-ring"
+      className="flex h-11 items-center gap-2 rounded-[var(--r-control)] border border-[var(--border-control)] px-3 font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text)] focus-ring"
       aria-label="Cambiar entre tema claro y oscuro"
     >
       <Moon className="size-5 theme-when-light" aria-hidden />

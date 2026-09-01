@@ -20,8 +20,8 @@ export default function ErrorBoundary({
       <span
         className="flex size-14 items-center justify-center rounded-full"
         style={{
-          background: "var(--tone-red-bg)",
-          color: "var(--tone-red-fg)",
+          background: "var(--tone-danger-bg)",
+          color: "var(--tone-danger-fg)",
         }}
       >
         <AlertTriangle className="size-7" />

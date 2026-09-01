@@ -23,10 +23,10 @@ type Option = { id: string; label: string };
 
 /** Estado visual según cuántos días faltan para el vencimiento. */
 function expiryState(days: number): { tone: Tone; label: string } {
-  if (days < 0) return { tone: "red", label: "Vencido" };
-  if (days <= 7) return { tone: "red", label: "Urgente" };
-  if (days <= 30) return { tone: "amber", label: "Por vencer" };
-  return { tone: "green", label: "Vigente" };
+  if (days < 0) return { tone: "danger", label: "Vencido" };
+  if (days <= 7) return { tone: "danger", label: "Urgente" };
+  if (days <= 30) return { tone: "warning", label: "Por vencer" };
+  return { tone: "success", label: "Vigente" };
 }
 
 export function DocumentTable({

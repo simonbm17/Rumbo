@@ -72,7 +72,7 @@ export function RevenueChart({ data }: { data: MonthPoint[] }) {
           <Bar
             dataKey="ingresos"
             name="Entró"
-            fill="var(--tone-green-fg)"
+            fill="var(--tone-success-fg)"
             radius={[4, 4, 0, 0]}
             maxBarSize={38}
             isAnimationActive={false}
@@ -80,7 +80,7 @@ export function RevenueChart({ data }: { data: MonthPoint[] }) {
           <Bar
             dataKey="gastos"
             name="Salió"
-            fill="var(--tone-amber-fg)"
+            fill="var(--tone-warning-fg)"
             radius={[4, 4, 0, 0]}
             maxBarSize={38}
             isAnimationActive={false}

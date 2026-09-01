@@ -1,39 +1,57 @@
 /**
- * La placa del vehículo.
+ * La placa del vehículo. Es el nombre propio del activo: nadie dice «el
+ * Kenworth», dicen «el WGR-482».
  *
- * Es el dato con el que la gente del transporte identifica un camión: no dicen
- * "el Kenworth", dicen "el WGR-482". Merece un tratamiento propio y no ser una
- * línea de texto más.
+ * SOBRE EL SEPARADOR — corrijo mi propia propuesta.
+ * Había propuesto un punto medio (WGR·482). Es peor: nadie escribe así. La
+ * placa se guarda, se busca y se teclea con guion, y transformar el dato para
+ * que se vea mejor crea una diferencia entre lo que la persona busca y lo que
+ * ve. El componente da énfasis tipográfico; no reescribe el dato.
  *
- * En tamaño `lg` se dibuja como una chapa: monoespaciada, versalitas
- * espaciadas y un marco de 2px. Es una convención del dominio, no un adorno
- * inventado, y hace que el ojo la encuentre sin leer.
+ * SOBRE EL COLOR — no lleva.
+ * Las placas colombianas son amarillas para particular y blancas para servicio
+ * público. Cualquiera de las dos chocaría con las cuatro señales semánticas.
+ * La fuerza de la placa es tipográfica: monoespaciada, versalitas, espaciado
+ * amplio y glifos inequívocos —el 0 de Plex Mono lleva barra, así que no se
+ * confunde con la O.
  *
- * En tamaño `sm` (tablas) se cae el marco a propósito: repetido en 300 filas
- * el recuadro sería ruido. Ahí alcanza con la monoespaciada y el espaciado.
+ * Una sola representación oficial: la placa NUNCA se superpone a la fotografía.
  */
+
+type Size = "sm" | "md" | "lg";
+
+const SIZES: Record<Size, string> = {
+  // Tablas y listas densas: sin marco, el recuadro repetido en 300 filas es ruido.
+  sm: "text-base tracking-[0.1em]",
+  // Ficha de vehículo.
+  md: "text-xl tracking-[0.12em]",
+  // Encabezado de detalle.
+  lg: "text-3xl tracking-[0.1em]",
+};
+
 export function Plate({
   value,
-  size = "sm",
+  size = "md",
+  framed,
   className = "",
 }: {
   value: string;
-  size?: "sm" | "lg";
+  size?: Size;
+  /** El marco se justifica a partir de `md`; por debajo es ruido. */
+  framed?: boolean;
   className?: string;
 }) {
-  if (size === "lg") {
-    return (
-      <span
-        className={`inline-flex items-center rounded-md border-2 border-[var(--text)] bg-[var(--surface)] px-2.5 py-1 font-mono text-lg font-semibold uppercase tracking-[0.12em] text-[var(--text)] ${className}`}
-      >
-        {value}
-      </span>
-    );
-  }
+  const conMarco = framed ?? size !== "sm";
 
   return (
     <span
-      className={`font-mono font-medium uppercase tracking-[0.08em] ${className}`}
+      className={`inline-flex items-center whitespace-nowrap font-mono font-semibold uppercase text-[var(--text)] ${
+        SIZES[size]
+      } ${
+        conMarco
+          ? "rounded-[var(--r-control)] border-2 border-[var(--text)] px-2.5 py-0.5"
+          : ""
+      } ${className}`}
     >
       {value}
     </span>

@@ -94,18 +94,18 @@ export default async function TripsPage({
       />
 
       <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Viajes encontrados" value={total} tone="violet" />
+        <StatCard label="Viajes encontrados" value={total} tone="neutral" />
         <StatCard
           label="Facturación"
           value={money(revenue, true)}
           hint="Suma de los fletes filtrados"
-          tone="green"
+          tone="success"
         />
         <StatCard
           label="Kilómetros"
           value={new Intl.NumberFormat("es-CO").format(distance)}
           hint="Distancia registrada"
-          tone="blue"
+          tone="info"
         />
       </div>
 

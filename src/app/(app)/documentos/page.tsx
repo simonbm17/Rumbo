@@ -112,7 +112,7 @@ export default async function DocumentsPage({
           value={expired}
           hint="Requieren acción inmediata"
           icon={<AlertTriangle className="size-5" />}
-          tone="red"
+          tone="danger"
           href="/documentos?estado=vencidos"
         />
         <StatCard
@@ -120,7 +120,7 @@ export default async function DocumentsPage({
           value={soon}
           hint="En los próximos 30 días"
           icon={<Bell className="size-5" />}
-          tone="amber"
+          tone="warning"
           href="/documentos?estado=porvencer"
         />
         <StatCard
@@ -128,7 +128,7 @@ export default async function DocumentsPage({
           value={valid}
           hint="Más de 30 días de vigencia"
           icon={<FileCheck className="size-5" />}
-          tone="green"
+          tone="success"
           href="/documentos?estado=vigentes"
         />
       </div>

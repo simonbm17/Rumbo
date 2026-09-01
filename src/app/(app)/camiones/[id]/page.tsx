@@ -102,7 +102,7 @@ export default async function TruckDetailPage({
         title={
           <span className="flex flex-wrap items-center gap-3">
             <Plate value={truck.plate} size="lg" className="!text-2xl" />
-            <Badge tone={truck.archived ? "slate" : status.tone} dot>
+            <Badge tone={truck.archived ? "neutral" : status.tone} dot>
               {truck.archived ? "Archivado" : status.label}
             </Badge>
           </span>
@@ -224,7 +224,7 @@ export default async function TruckDetailPage({
                 : "Sin ingresos registrados"
             }
             icon={<TrendingUp className="size-5" />}
-            tone={finance.utilidad >= 0 ? "teal" : "red"}
+            tone={finance.utilidad >= 0 ? "success" : "danger"}
           />
           <StatCard
             label="Costo por kilómetro"
@@ -233,7 +233,7 @@ export default async function TruckDetailPage({
             }
             hint={`${km(finance.km)} recorridos`}
             icon={<Gauge className="size-5" />}
-            tone="blue"
+            tone="info"
           />
           <StatCard
             label="Rendimiento"
@@ -244,7 +244,7 @@ export default async function TruckDetailPage({
             }
             hint={`${fuel.fillUps} tanqueos`}
             icon={<Fuel className="size-5" />}
-            tone="violet"
+            tone="neutral"
           />
         </div>
       </div>
@@ -293,7 +293,7 @@ export default async function TruckDetailPage({
       )}
 
       {editable && tab === "" && (
-        <Card className="mt-5 border-[var(--tone-red-bg)]">
+        <Card className="mt-5 border-[var(--tone-danger-bg)]">
           <CardHeader
             title="Zona de riesgo"
             description="Eliminar el camión borra también sus viajes, cargas, gastos, mantenimientos y documentos. Si solo querés sacarlo de circulación, usá «Archivar»."

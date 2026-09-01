@@ -73,7 +73,7 @@ export default async function UsersPage() {
                     {user.lastLoginAt ? dateTime(user.lastLoginAt) : "Nunca"}
                   </TD>
                   <TD>
-                    <Badge tone={user.active ? "green" : "slate"} dot>
+                    <Badge tone={user.active ? "success" : "neutral"} dot>
                       {user.active ? "Activo" : "Desactivado"}
                     </Badge>
                   </TD>

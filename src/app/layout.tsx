@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
-import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { Archivo, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 
 /**
@@ -26,6 +26,21 @@ const sans = IBM_Plex_Sans({
   display: "swap",
 });
 
+/**
+ * Archivo solo para títulos. Es una grotesca de señalización: ancha, de
+ * terminaciones rectas, pensada para leerse rápido y en tamaños grandes.
+ * Emparejada con Plex el contraste es de ANCHO, no de estilo, así que no se
+ * leen como dos sans intercambiables.
+ *
+ * No entra en el cuerpo ni en formularios: ahí manda Plex, que está probado.
+ */
+const display = Archivo({
+  variable: "--font-display-family",
+  subsets: ["latin", "latin-ext"],
+  weight: ["600", "700"],
+  display: "swap",
+});
+
 const mono = IBM_Plex_Mono({
   variable: "--font-mono-family",
   subsets: ["latin", "latin-ext"],
@@ -43,7 +58,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f2f5f8",
+  themeColor: "#eff2f5",
 };
 
 /**
@@ -63,7 +78,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="es"
       data-theme="light"
-      className={`${sans.variable} ${mono.variable} h-full antialiased`}
+      className={`${display.variable} ${sans.variable} ${mono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

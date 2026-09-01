@@ -76,9 +76,18 @@ export function FilterBar({
     Boolean(activeChip) ||
     filters.some((f) => searchParams.get(f.name));
 
+  /*
+    Limpiar borra los filtros de ESTA barra, no la URL entera. La vista elegida
+    (fichas o tabla) y cualquier otro parámetro de contexto no son filtros y no
+    tienen por qué desaparecer porque alguien quitó una búsqueda.
+  */
   function clearAll() {
     setQuery("");
-    startTransition(() => router.replace(pathname, { scroll: false }));
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("q");
+    if (chips) next.delete(chips.name);
+    for (const f of filters) next.delete(f.name);
+    apply(next);
   }
 
   return (
@@ -125,7 +134,7 @@ export function FilterBar({
         {hasFilters && (
           <button
             onClick={clearAll}
-            className="inline-flex h-11 items-center gap-1.5 rounded-lg px-3 font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text)] focus-ring"
+            className="inline-flex h-11 items-center gap-1.5 rounded-[var(--r-control)] px-3 font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text)] focus-ring"
           >
             <X className="size-4" aria-hidden />
             Limpiar
@@ -178,7 +187,7 @@ function Chip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className="inline-flex h-11 items-center rounded-lg border px-4 font-medium transition-colors focus-ring"
+      className="inline-flex h-11 items-center rounded-[var(--r-control)] border px-4 font-medium transition-colors focus-ring"
       style={
         active
           ? {

@@ -29,7 +29,7 @@ const VARIANTS: Record<Variant, string> = {
     "bg-[var(--surface)] text-[var(--text)] border border-[var(--border-control)] hover:bg-[var(--surface-hover)]",
   ghost:
     "text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)]",
-  // Fondo rojo sólido con su propia tinta: `--tone-red-fg` no sirve de fondo
+  // Fondo rojo sólido con su propia tinta: `--tone-danger-fg` no sirve de fondo
   // porque en el tema oscuro es un rojo claro.
   danger:
     "bg-[var(--danger-solid)] text-[var(--danger-solid-text)] hover:opacity-90",

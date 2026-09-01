@@ -102,7 +102,9 @@ const TRUCKS = [
     capacityKg: 5500,
     axles: 2,
     odometerKm: 145_900,
-    status: "ACTIVE" as TruckStatus,
+    // Fuera de servicio a propósito: sin esto la demo no muestra
+    // nunca el estado inactivo, que es real en cualquier flota.
+    status: "INACTIVE" as TruckStatus,
     purchasePrice: 165_000_000,
   },
   {
@@ -394,7 +396,13 @@ async function main() {
   console.log("Creando camiones…");
   const trucks = [];
   for (const [i, t] of TRUCKS.entries()) {
-    const photoUrl = await writeTruckImage(t.plate, i);
+    /*
+      El último vehículo queda sin foto a propósito. Un cliente real siempre
+      tiene alguno recién comprado, o uno que nadie alcanzó a fotografiar; si la
+      demo estuviera completa, ese caso solo se vería en producción.
+    */
+    const sinFoto = i === TRUCKS.length - 1;
+    const photoUrl = sinFoto ? null : await writeTruckImage(t.plate, i);
     trucks.push(
       await prisma.truck.create({
         data: {

@@ -12,23 +12,35 @@ import type {
   TruckStatus,
 } from "@/generated/prisma/enums";
 
-/** Paleta semántica de los badges. Definida en globals.css. */
-export type Tone =
-  | "green"
-  | "blue"
-  | "amber"
-  | "red"
-  | "slate"
-  | "violet"
-  | "teal";
+/**
+ * Tres conceptos distintos, que no se mezclan:
+ *
+ *   IDENTIDAD   el acento de Rumbo (#0E4F5C). No está en este archivo a
+ *               propósito: no es un estado y nunca puede serlo.
+ *   SEMÁNTICA   cuatro familias, las de abajo. Cada una dice algo del mundo:
+ *               salió bien, hay que mirarlo, está mal, es un dato.
+ *   NEUTRO      `neutral`. NO es una quinta familia semántica: es la ausencia
+ *               de señal, para lo que existe pero no reclama nada.
+ *
+ * Violeta y turquesa se eliminaron: no significaban nada que el neutro no
+ * dijera, obligaban a aprender más vocabulario del necesario, y ocupaban el
+ * espacio cromático que el acento de marca necesita.
+ *
+ * Antes el neutro se llamaba `slate`, que es un nombre de color. Un nombre de
+ * color invita a leerlo como una familia más; `neutral` nombra el rol.
+ */
+export type SemanticTone = "success" | "warning" | "danger" | "info";
+
+/** Lo que puede llevar un estado en pantalla: una señal, o ninguna. */
+export type Tone = SemanticTone | "neutral";
 
 type Meta<T extends string> = Record<T, { label: string; tone: Tone }>;
 
 export const TRUCK_STATUS: Meta<TruckStatus> = {
-  ACTIVE: { label: "Disponible", tone: "green" },
-  IN_TRIP: { label: "En viaje", tone: "blue" },
-  MAINTENANCE: { label: "En taller", tone: "amber" },
-  INACTIVE: { label: "Fuera de servicio", tone: "slate" },
+  ACTIVE: { label: "Disponible", tone: "success" },
+  IN_TRIP: { label: "En viaje", tone: "info" },
+  MAINTENANCE: { label: "En taller", tone: "warning" },
+  INACTIVE: { label: "Fuera de servicio", tone: "neutral" },
 };
 
 export const TRUCK_KIND: Record<TruckKind, string> = {
@@ -45,24 +57,24 @@ export const TRUCK_KIND: Record<TruckKind, string> = {
 };
 
 export const DRIVER_STATUS: Meta<DriverStatus> = {
-  ACTIVE: { label: "Disponible", tone: "green" },
-  ON_TRIP: { label: "En ruta", tone: "blue" },
-  OFF_DUTY: { label: "Descanso", tone: "amber" },
-  INACTIVE: { label: "Inactivo", tone: "slate" },
+  ACTIVE: { label: "Disponible", tone: "success" },
+  ON_TRIP: { label: "En ruta", tone: "info" },
+  OFF_DUTY: { label: "Descanso", tone: "warning" },
+  INACTIVE: { label: "Inactivo", tone: "neutral" },
 };
 
 export const TRIP_STATUS: Meta<TripStatus> = {
-  PLANNED: { label: "Programado", tone: "violet" },
-  IN_PROGRESS: { label: "En curso", tone: "blue" },
-  COMPLETED: { label: "Completado", tone: "green" },
-  CANCELLED: { label: "Cancelado", tone: "red" },
+  PLANNED: { label: "Programado", tone: "neutral" },
+  IN_PROGRESS: { label: "En curso", tone: "info" },
+  COMPLETED: { label: "Completado", tone: "success" },
+  CANCELLED: { label: "Cancelado", tone: "danger" },
 };
 
 export const CARGO_STATUS: Meta<CargoStatus> = {
-  PENDING: { label: "Pendiente", tone: "slate" },
-  LOADED: { label: "Cargada", tone: "blue" },
-  DELIVERED: { label: "Entregada", tone: "green" },
-  INCIDENT: { label: "Con novedad", tone: "red" },
+  PENDING: { label: "Pendiente", tone: "neutral" },
+  LOADED: { label: "Cargada", tone: "info" },
+  DELIVERED: { label: "Entregada", tone: "success" },
+  INCIDENT: { label: "Con novedad", tone: "danger" },
 };
 
 export const CARGO_UNIT: Record<CargoUnit, string> = {
@@ -86,10 +98,10 @@ export const MAINTENANCE_TYPE: Record<MaintenanceType, string> = {
 };
 
 export const MAINTENANCE_STATUS: Meta<MaintenanceStatus> = {
-  SCHEDULED: { label: "Programado", tone: "violet" },
-  IN_PROGRESS: { label: "En proceso", tone: "blue" },
-  COMPLETED: { label: "Realizado", tone: "green" },
-  CANCELLED: { label: "Cancelado", tone: "slate" },
+  SCHEDULED: { label: "Programado", tone: "neutral" },
+  IN_PROGRESS: { label: "En proceso", tone: "info" },
+  COMPLETED: { label: "Realizado", tone: "success" },
+  CANCELLED: { label: "Cancelado", tone: "neutral" },
 };
 
 export const EXPENSE_CATEGORY: Record<ExpenseCategory, string> = {
@@ -140,9 +152,9 @@ export const DRIVER_DOCUMENT_TYPES: DocumentType[] = [
 ];
 
 export const ROLE: Meta<Role> = {
-  ADMIN: { label: "Administrador", tone: "violet" },
-  MANAGER: { label: "Operador", tone: "blue" },
-  VIEWER: { label: "Solo lectura", tone: "slate" },
+  ADMIN: { label: "Administrador", tone: "info" },
+  MANAGER: { label: "Operador", tone: "neutral" },
+  VIEWER: { label: "Solo lectura", tone: "neutral" },
 };
 
 export const ROLE_HELP: Record<Role, string> = {

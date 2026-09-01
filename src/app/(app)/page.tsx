@@ -86,8 +86,8 @@ export default async function DashboardPage() {
           <div
             className="flex items-center gap-3 rounded-xl px-5 py-4"
             style={{
-              background: "var(--tone-green-bg)",
-              color: "var(--tone-green-fg)",
+              background: "var(--tone-success-bg)",
+              color: "var(--tone-success-fg)",
             }}
           >
             <CheckCircle2 className="size-6 shrink-0" aria-hidden />
@@ -147,8 +147,8 @@ export default async function DashboardPage() {
               detalle="Lo que quedó"
               color={
                 stats.profit >= 0
-                  ? "var(--tone-green-fg)"
-                  : "var(--tone-red-fg)"
+                  ? "var(--tone-success-fg)"
+                  : "var(--tone-danger-fg)"
               }
             />
           </dl>
