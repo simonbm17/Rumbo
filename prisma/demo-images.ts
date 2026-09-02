@@ -42,9 +42,55 @@ const ENCUADRES = [
   { x: 96, escala: 1.05 },
 ];
 
-function vehiculoSvg(seed: number) {
-  const e = ESCENAS[seed % ESCENAS.length];
-  const f = ENCUADRES[seed % ENCUADRES.length];
+/**
+ * QUÉ ASPECTO TIENE CADA VEHÍCULO DE LA DEMO, POR PLACA.
+ *
+ * Antes esto se decidía con la posición del vehículo dentro del array `TRUCKS`
+ * del seed. Esa posición no es una identidad: basta reordenar la lista, o
+ * insertar un vehículo en medio, para que a cada uno le toque otra escena y los
+ * cinco archivos versionados cambien sin que nadie lo haya pedido. Fue
+ * exactamente lo que pasó, y por eso `npm run db:seed` dejaba el árbol sucio.
+ *
+ * La placa sí es identidad: es única, es estable y es la que da nombre al
+ * archivo. Los valores de esta tabla son los de los SVG ya aprobados en
+ * Vehículos V1; no se eligieron ahora, se leyeron de ellos.
+ *
+ * Estar o no estar en la tabla es también lo que decide quién tiene foto:
+ * LMN-587 no aparece a propósito. Un cliente real siempre tiene algún vehículo
+ * recién comprado que nadie alcanzó a fotografiar, y la demo tiene que
+ * enseñarlo. Antes ese caso era «el último del array», que se mueve solo.
+ */
+const VEHICULOS_DEMO: Record<string, { escena: number; encuadre: number }> = {
+  "JHR-256": { escena: 0, encuadre: 0 },
+  "PFT-940": { escena: 2, encuadre: 2 },
+  "SKD-119": { escena: 3, encuadre: 3 },
+  "TQM-703": { escena: 4, encuadre: 0 },
+  "WGR-482": { escena: 5, encuadre: 1 },
+};
+
+/**
+ * LOS AVATARES, POR DOCUMENTO DE IDENTIDAD.
+ *
+ * Fondo saturado y oscuro con las iniciales en blanco. No sale de `ESCENAS`:
+ * aquélla es la paleta de las fotografías de vehículo —cielo, suelo, carrocería
+ * — y usarla acá teñía los avatares de otro color cada vez que se tocaba una
+ * escena. Son dos cosas distintas y ahora tienen dos paletas distintas.
+ *
+ * `orden` es el sufijo del nombre del archivo (`persona-cr-0.svg`). Está
+ * declarado, no contado: así renombrar o reordenar conductores no rebautiza
+ * ficheros ya versionados.
+ */
+const AVATARES_DEMO: Record<string, { orden: number; fondo: string }> = {
+  "79452103": { orden: 0, fondo: "#3d2a63" }, // Carlos Ramírez
+  "1023456789": { orden: 1, fondo: "#7a2a24" }, // Jorge Peña
+  "80345612": { orden: 2, fondo: "#1b4a2c" }, // Miguel Salazar
+  "1098765432": { orden: 3, fondo: "#31404f" }, // Andrés Gutiérrez
+  "94120356": { orden: 4, fondo: "#14405c" }, // Luis Moreno
+};
+
+function vehiculoSvg(escena: number, encuadre: number) {
+  const e = ESCENAS[escena];
+  const f = ENCUADRES[encuadre];
   const sombra = e.claro ? "#000000" : "#000000";
   const vidrio = e.claro ? "#8ea3b8" : "#4a5a6b";
 
@@ -68,25 +114,41 @@ function vehiculoSvg(seed: number) {
 </svg>`;
 }
 
-function personSvg(initials: string, index: number) {
-  const e = ESCENAS[(index + 3) % ESCENAS.length];
+function personSvg(initials: string, fondo: string) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img" aria-label="Foto de ejemplo">
-  <rect width="240" height="240" fill="${e.cuerpo}"/>
+  <rect width="240" height="240" fill="${fondo}"/>
   <text x="120" y="120" font-family="Segoe UI, Arial, sans-serif" font-size="88"
-        font-weight="600" fill="${e.cielo}" text-anchor="middle" dominant-baseline="central">${initials}</text>
+        font-weight="600" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${initials}</text>
 </svg>`;
 }
 
-export async function writeTruckImage(plate: string, index: number) {
+/**
+ * Escribe la foto de ejemplo del vehículo y devuelve su URL, o `null` si esa
+ * placa no tiene foto en la demo. Depende solo de la placa: la misma placa da
+ * siempre el mismo archivo con los mismos bytes.
+ */
+export async function writeTruckImage(plate: string) {
+  const demo = VEHICULOS_DEMO[plate];
+  if (!demo) return null;
+
   await mkdir(DEMO_DIR, { recursive: true });
   const file = `camion-${plate.toLowerCase()}.svg`;
-  await writeFile(path.join(DEMO_DIR, file), vehiculoSvg(index), "utf8");
+  const svg = vehiculoSvg(demo.escena, demo.encuadre);
+  await writeFile(path.join(DEMO_DIR, file), svg, "utf8");
   return `/uploads/demo/${file}`;
 }
 
-export async function writePersonImage(initials: string, index: number) {
+/**
+ * Igual para el avatar, atado al documento de identidad del conductor. Sin
+ * entrada en el manifiesto no hay avatar: la persona se identifica por sus
+ * iniciales, que es lo que ya hace la interfaz cuando no hay foto.
+ */
+export async function writePersonImage(documentId: string, initials: string) {
+  const demo = AVATARES_DEMO[documentId];
+  if (!demo) return null;
+
   await mkdir(DEMO_DIR, { recursive: true });
-  const file = `persona-${initials.toLowerCase()}-${index}.svg`;
-  await writeFile(path.join(DEMO_DIR, file), personSvg(initials, index), "utf8");
+  const file = `persona-${initials.toLowerCase()}-${demo.orden}.svg`;
+  await writeFile(path.join(DEMO_DIR, file), personSvg(initials, demo.fondo), "utf8");
   return `/uploads/demo/${file}`;
 }

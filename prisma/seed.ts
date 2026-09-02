@@ -345,8 +345,8 @@ async function main() {
   const drivers = [];
   for (const [i, d] of DRIVERS.entries()) {
     const photoUrl = await writePersonImage(
-      `${d.firstName[0]}${d.lastName[0]}`,
-      i
+      d.documentId,
+      `${d.firstName[0]}${d.lastName[0]}`
     );
     drivers.push(
       await prisma.driver.create({
@@ -397,12 +397,11 @@ async function main() {
   const trucks = [];
   for (const [i, t] of TRUCKS.entries()) {
     /*
-      El último vehículo queda sin foto a propósito. Un cliente real siempre
-      tiene alguno recién comprado, o uno que nadie alcanzó a fotografiar; si la
-      demo estuviera completa, ese caso solo se vería en producción.
+      Quién tiene foto y cuál lo decide el manifiesto de `demo-images`, por
+      placa. Acá se decidía con la posición en el array —«el último no tiene
+      foto»—, y esa posición se mueve sola al reordenar la lista.
     */
-    const sinFoto = i === TRUCKS.length - 1;
-    const photoUrl = sinFoto ? null : await writeTruckImage(t.plate, i);
+    const photoUrl = await writeTruckImage(t.plate);
     trucks.push(
       await prisma.truck.create({
         data: {

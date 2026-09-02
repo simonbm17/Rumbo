@@ -1,0 +1,8 @@
+# Los SVG de la demo los reescribe `npm run db:seed` en cada ejecución, siempre
+# con saltos de línea LF. Con `core.autocrlf=true` —el valor normal en Windows—
+# git deja el árbol de trabajo en CRLF al clonar, así que el archivo generado
+# nunca coincide con el que está en disco y `git status` los reporta
+# modificados aunque el contenido sea idéntico byte a byte.
+#
+# Fijar LF acá hace que el checkout escriba lo mismo que escribe el generador.
+/public/uploads/demo/*.svg text eol=lf
