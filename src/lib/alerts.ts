@@ -105,10 +105,18 @@ export const getAlerts = cache(async function getAlerts(
       : doc.driver
         ? fullName(doc.driver)
         : "Sin asignar";
+    /*
+      Ancla, no `?tab=`. Los expedientes tuvieron pestañas y el destino era
+      `?tab=documentos`; al pasar a página continua se borraron las pestañas y
+      nadie volvió a leer ese parámetro, así que el enlace abría la ficha por
+      arriba y dejaba el documento vencido cinco secciones más abajo. Las
+      secciones ya llevan `id` y `scroll-mt-20`, que es lo que deja el
+      encabezado por debajo de la barra fija.
+    */
     const href = doc.truck
-      ? `/camiones/${doc.truck.id}?tab=documentos`
+      ? `/camiones/${doc.truck.id}#documentos`
       : doc.driver
-        ? `/conductores/${doc.driver.id}?tab=documentos`
+        ? `/conductores/${doc.driver.id}#documentos`
         : "/documentos";
 
     alerts.push({
@@ -144,7 +152,7 @@ export const getAlerts = cache(async function getAlerts(
       title: `${item.title} — Camión ${item.truck.plate}`,
       detail: "Mantenimiento programado",
       days,
-      href: `/camiones/${item.truck.id}?tab=mantenimiento`,
+      href: `/camiones/${item.truck.id}#mantenimiento`,
       kind: "maintenance",
     });
   }

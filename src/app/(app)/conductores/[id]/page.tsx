@@ -456,6 +456,8 @@ export default async function DriverDetailPage({
 
       {/* ----------------------------- DOCUMENTOS -------------------------- */}
       <Section
+        // Destino de las alertas de documento de conductor.
+        id="documentos"
         title="Documentos"
         count={driver._count.documents}
         className="mb-8"
