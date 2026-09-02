@@ -10,6 +10,7 @@ import type { ReactNode } from "react";
  * diseño anterior.
  */
 export function Section({
+  id,
   title,
   description,
   action,
@@ -17,6 +18,8 @@ export function Section({
   children,
   className = "",
 }: {
+  /** Ancla para la navegación local. Opcional: casi ninguna sección la usa. */
+  id?: string;
   title?: ReactNode;
   description?: ReactNode;
   action?: ReactNode;
@@ -26,7 +29,11 @@ export function Section({
   className?: string;
 }) {
   return (
-    <section className={className}>
+    /*
+      `scroll-mt-20` deja sitio para la barra superior fija: sin eso, saltar a
+      un ancla mete el título debajo de la barra y parece que no pasó nada.
+    */
+    <section id={id} className={`${id ? "scroll-mt-20" : ""} ${className}`}>
       {(title || action) && (
         /*
           En móvil la cabecera pierde la regla y el relleno inferior: la lista

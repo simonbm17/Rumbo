@@ -3,43 +3,47 @@ import Link from "next/link";
 import {
   Archive,
   ArchiveRestore,
-  Fuel,
-  Gauge,
+  ArrowLeft,
+  FileText,
   Pencil,
-  Route,
   Trash2,
-  TrendingUp,
-  Truck as TruckIcon,
+  TriangleAlert,
 } from "lucide-react";
 import { canWrite, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getFuelStats, getMonthlySeries, getTruckFinancials } from "@/lib/stats";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { Card, CardHeader, DataItem } from "@/components/ui/Card";
+import { historialDeVehiculo, vigenteDeVehiculo } from "@/lib/assignments";
+import { ALERT_LABEL, ALERT_TONE, getAlerts } from "@/lib/alerts";
 import { Badge } from "@/components/ui/Badge";
-import { Plate } from "@/components/ui/Plate";
+import { Section } from "@/components/ui/Section";
 import { LinkButton } from "@/components/ui/Button";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
-import { StatCard } from "@/components/ui/StatCard";
-import { Tabs } from "@/components/ui/Tabs";
+import { RecordList, RecordRow } from "@/components/RecordList";
 import { RevenueChart } from "@/components/charts/RevenueChart";
-import { TripTable } from "@/components/lists/TripTable";
-import { MaintenanceTable } from "@/components/lists/MaintenanceTable";
-import { ExpenseTable } from "@/components/lists/ExpenseTable";
-import { DocumentTable } from "@/components/lists/DocumentTable";
+import { VehicleIdentityHeader } from "@/components/VehicleIdentityHeader";
 import { MaintenanceModal } from "@/components/forms/MaintenanceModal";
 import { ExpenseModal } from "@/components/forms/ExpenseModal";
 import { DocumentModal } from "@/components/forms/DocumentModal";
 import { StatusSwitcher } from "./StatusSwitcher";
 import { archiveTruck, deleteTruck } from "@/actions/trucks";
-import { TRUCK_KIND, TRUCK_STATUS } from "@/lib/labels";
+import {
+  ASSIGNMENT_END_REASON,
+  ASSIGNMENT_SOURCE,
+  DOCUMENT_TYPE,
+  EXPENSE_CATEGORY,
+  MAINTENANCE_STATUS,
+  MAINTENANCE_TYPE,
+  TRIP_STATUS,
+} from "@/lib/labels";
 import {
   date,
+  daysUntil,
   fullName,
   km,
   money,
   number,
   percent,
+  relativeDays,
 } from "@/lib/format";
 
 export async function generateMetadata({
@@ -50,25 +54,22 @@ export async function generateMetadata({
     where: { id },
     select: { plate: true },
   });
-  return { title: truck ? `Camión ${truck.plate}` : "Camión" };
+  return { title: truck ? `Vehículo ${truck.plate}` : "Vehículo" };
 }
+
+/** Cuántos registros recientes muestra cada sección del expediente. */
+const RECIENTES = 5;
 
 export default async function TruckDetailPage({
   params,
-  searchParams,
 }: PageProps<"/camiones/[id]">) {
   const user = await requireUser();
   const { id } = await params;
-  const sp = await searchParams;
-  const tab = typeof sp.tab === "string" ? sp.tab : "";
   const editable = canWrite(user);
 
   const truck = await prisma.truck.findUnique({
     where: { id },
     include: {
-      currentDriver: {
-        select: { id: true, firstName: true, lastName: true, phone: true },
-      },
       _count: {
         select: {
           trips: true,
@@ -82,48 +83,595 @@ export default async function TruckDetailPage({
 
   if (!truck) notFound();
 
-  const [finance, fuel, series, trucks] = await Promise.all([
+  const [
+    asignacionVigente,
+    historial,
+    finance,
+    fuel,
+    serie,
+    viajes,
+    mantenimientos,
+    gastos,
+    documentos,
+    alertas,
+    trucks,
+    tripsParaGasto,
+    driversParaGasto,
+  ] = await Promise.all([
+    /*
+      El conductor de la cabecera sale de DriverAssignment, no de
+      `Truck.currentDriverId` ni del último viaje. `currentDriverId` es una
+      proyección de compatibilidad y el conductor de un viaje es quien condujo
+      ESE viaje, que puede no ser el asignado hoy.
+    */
+    vigenteDeVehiculo(truck.id),
+    historialDeVehiculo(truck.id),
     getTruckFinancials(truck.id),
     getFuelStats(truck.id),
+    /*
+      Seis meses de ESTE vehículo: `getMonthlySeries` filtra por `truckId` las
+      tres consultas que la componen. No es una métrica nueva ni un cálculo
+      nuevo; es la misma serie que ya existía en la página anterior.
+    */
     getMonthlySeries(6, truck.id),
+    prisma.trip.findMany({
+      where: { truckId: truck.id },
+      orderBy: { departureAt: "desc" },
+      take: RECIENTES,
+      select: {
+        id: true,
+        code: true,
+        origin: true,
+        destination: true,
+        departureAt: true,
+        distanceKm: true,
+        status: true,
+        revenue: true,
+        driver: { select: { firstName: true, lastName: true } },
+      },
+    }),
+    prisma.maintenance.findMany({
+      where: { truckId: truck.id },
+      orderBy: { date: "desc" },
+      take: RECIENTES,
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        date: true,
+        odometerKm: true,
+        cost: true,
+        workshop: true,
+        status: true,
+        nextServiceDate: true,
+        nextServiceKm: true,
+      },
+    }),
+    prisma.expense.findMany({
+      where: { truckId: truck.id },
+      orderBy: { date: "desc" },
+      take: RECIENTES,
+      select: {
+        id: true,
+        category: true,
+        description: true,
+        amount: true,
+        date: true,
+        liters: true,
+        supplier: true,
+        trip: { select: { id: true, code: true } },
+      },
+    }),
+    // Los documentos van completos: son pocos y el vencimiento es lo que se
+    // viene a consultar. Ordenados por lo que vence antes.
+    prisma.document.findMany({
+      where: { truckId: truck.id },
+      orderBy: { expiresAt: "asc" },
+      select: {
+        id: true,
+        type: true,
+        number: true,
+        issuer: true,
+        expiresAt: true,
+        fileUrl: true,
+      },
+    }),
+    getAlerts(),
     prisma.truck.findMany({
       where: { archived: false },
       orderBy: { plate: "asc" },
       select: { id: true, plate: true, nickname: true },
     }),
+    prisma.trip.findMany({
+      where: { truckId: truck.id },
+      orderBy: { departureAt: "desc" },
+      take: 60,
+      select: { id: true, code: true, origin: true, destination: true },
+    }),
+    prisma.driver.findMany({
+      where: { archived: false },
+      orderBy: { firstName: "asc" },
+      select: { id: true, firstName: true, lastName: true },
+    }),
   ]);
 
-  const status = TRUCK_STATUS[truck.status];
-  const basePath = `/camiones/${truck.id}`;
+  const conductor = asignacionVigente
+    ? {
+        id: asignacionVigente.driver.id,
+        nombre: fullName(asignacionVigente.driver),
+      }
+    : null;
+
+  // Solo las alertas de ESTE vehículo. `getAlerts` está cacheada por petición.
+  const misAlertas = alertas.filter((a) => a.href.startsWith(`/camiones/${truck.id}`));
+
+  const truckOptions = trucks.map((t) => ({ id: t.id, label: t.plate }));
+  const tripOptions = tripsParaGasto.map((t) => ({
+    id: t.id,
+    label: `${t.code} — ${t.origin} → ${t.destination}`,
+  }));
+  const driverOptions = driversParaGasto.map((d) => ({
+    id: d.id,
+    label: fullName(d),
+  }));
 
   return (
     <>
-      <PageHeader
-        title={
-          <span className="flex flex-wrap items-center gap-3">
-            <Plate value={truck.plate} size="lg" className="!text-2xl" />
-            <Badge tone={truck.archived ? "neutral" : status.tone} dot>
-              {truck.archived ? "Archivado" : status.label}
-            </Badge>
-          </span>
-        }
-        description={
-          truck.nickname
-            ? `${truck.nickname} · ${truck.brand} ${truck.model} ${truck.year}`
-            : `${truck.brand} ${truck.model} ${truck.year} · ${TRUCK_KIND[truck.kind]}`
-        }
-        breadcrumbs={[
-          { label: "Camiones", href: "/camiones" },
-          { label: truck.plate },
-        ]}
-        actions={
+      {/*
+        El regreso es un enlace de verdad, con área tocable y con la palabra
+        «Vehículos» completa. La miga de pan de 14px que había antes decía lo
+        mismo con la mitad del tamaño y sin destino evidente.
+      */}
+      <Link
+        href="/camiones"
+        className="mb-4 inline-flex min-h-11 items-center gap-2 rounded-[var(--r-control)] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text)] focus-ring"
+      >
+        <ArrowLeft className="size-5" aria-hidden />
+        Vehículos
+      </Link>
+
+      <VehicleIdentityHeader
+        vehiculo={truck}
+        conductor={conductor}
+        acciones={
           editable && (
             <>
-              <StatusSwitcher truckId={truck.id} status={truck.status} />
-              <LinkButton href={`${basePath}/editar`} variant="secondary">
-                <Pencil className="size-4" />
-                Editar
+              <LinkButton href={`/camiones/${truck.id}/editar`}>
+                <Pencil className="size-5" aria-hidden />
+                Editar vehículo
               </LinkButton>
+              <StatusSwitcher truckId={truck.id} status={truck.status} />
+            </>
+          )
+        }
+      />
+
+      {/*
+        La alerta aparece solo cuando existe. No hay bloque reservado ni caja
+        vacía diciendo «todo en orden»: en un expediente operacional el silencio
+        ya significa que no hay nada que atender.
+      */}
+      {misAlertas.length > 0 && (
+        <section
+          aria-label="Requiere atención"
+          className="mb-6 overflow-hidden rounded-[var(--r-surface)] border border-[var(--border)] bg-[var(--surface)]"
+        >
+          <h2 className="flex items-center gap-2 border-b border-[var(--border)] bg-[var(--surface-2)] px-4 py-2.5 font-semibold">
+            <TriangleAlert
+              className="size-5 shrink-0 text-[var(--tone-danger-fg)]"
+              aria-hidden
+            />
+            Requiere atención
+            <span className="font-mono text-sm font-medium text-[var(--text-muted)] tabular-nums">
+              {misAlertas.length}
+            </span>
+          </h2>
+          <ul>
+            {misAlertas.map((a) => (
+              <li
+                key={a.id}
+                className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-[var(--border)] px-4 py-3 last:border-b-0"
+              >
+                <Badge tone={ALERT_TONE[a.level]} variant="quiet">
+                  {ALERT_LABEL[a.level]}
+                </Badge>
+                <span className="min-w-0 flex-1 font-medium">
+                  {a.title.split(" — ")[0]}
+                </span>
+                <span className="text-[var(--text-muted)]">
+                  {relativeDays(a.days)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/*
+        Navegación local. La agrego porque la medí: a 1440 el expediente ocupa
+        3269px —tres viewports y medio— y llegar al historial de asignación son
+        2800px de rueda. No es una segunda barra lateral ni una fila de íconos:
+        son las seis secciones escritas con su nombre. Se queda pegada arriba
+        solo desde 1024px, donde sobra alto; en un teléfono ocuparía viewport
+        que hace falta para el expediente.
+      */}
+      <nav
+        aria-label="Secciones del expediente"
+        className="mb-8 border-y border-[var(--border)] bg-[var(--bg)] lg:sticky lg:top-16 lg:z-[var(--z-sticky)]"
+      >
+        <ul className="flex flex-wrap items-center gap-x-6">
+          {[
+            ["resumen", "Resumen"],
+            ["viajes", "Viajes"],
+            ["mantenimiento", "Mantenimiento"],
+            ["gastos", "Gastos"],
+            ["documentos", "Documentos"],
+            ["historial", "Historial"],
+          ].map(([ancla, texto]) => (
+            <li key={ancla}>
+              <a
+                href={`#${ancla}`}
+                className="inline-flex min-h-11 items-center rounded-[var(--r-control)] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text)] focus-ring"
+              >
+                {texto}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      {/* ------------------------------ RESUMEN ------------------------------ */}
+      <Section id="resumen"
+        title="Resumen operacional" className="mb-8">
+        {/*
+          Cifras reales derivadas de lo que ya está cargado, en pares
+          etiqueta/valor. Sin tarjetas de indicador y sin gráfica: a la pregunta
+          «¿cómo está este vehículo hoy?» la responden estos números, no una
+          serie de seis meses que hay que interpretar.
+        */}
+        <dl className="grid grid-cols-2 gap-x-8 sm:grid-cols-3 xl:grid-cols-6">
+          <Cifra rotulo="Viajes" valor={String(finance.tripCount)} />
+          <Cifra rotulo="Recorrido" valor={km(finance.km)} />
+          <Cifra
+            rotulo="Costo por km"
+            valor={finance.costoPorKm !== null ? money(finance.costoPorKm) : "—"}
+          />
+          <Cifra
+            rotulo="Rendimiento"
+            valor={
+              fuel.kmPerLiter !== null
+                ? `${number(fuel.kmPerLiter, 2)} km/L`
+                : "—"
+            }
+          />
+          <Cifra rotulo="Ingresos" valor={money(finance.ingresos, true)} />
+          <Cifra
+            rotulo="Utilidad"
+            valor={money(finance.utilidad, true)}
+            nota={
+              finance.margen !== null ? `Margen ${percent(finance.margen)}` : undefined
+            }
+            tono={finance.utilidad >= 0 ? "success" : "danger"}
+          />
+        </dl>
+
+        {/*
+          La gráfica venía de la página anterior y se queda, porque responde una
+          pregunta operacional real y propia del vehículo: si lo que produce
+          cubre lo que cuesta, y hacia dónde va la tendencia. Es la pregunta con
+          la que se decide repararlo, seguir usándolo o sacarlo.
+
+          Va aquí, dentro del Resumen, después de las cifras y bajo su propio
+          rótulo: es lectura secundaria del expediente, no la portada. En un
+          teléfono baja a 224px para no comerse un tercio de la pantalla.
+        */}
+        <div className="mt-6 border-t border-[var(--border)] pt-4">
+          <h3 className="mb-1 font-semibold">Evolución de los últimos 6 meses</h3>
+          <p className="mb-3 text-sm text-[var(--text-muted)]">
+            Lo que este vehículo facturó en viajes contra lo que costó en gastos
+            y taller, mes a mes.
+          </p>
+          <RevenueChart data={serie} alto="h-56 sm:h-72" />
+        </div>
+
+        {(truck.vin || truck.engineNumber || truck.color || truck.notes) && (
+          <dl className="mt-6 grid grid-cols-1 gap-x-8 border-t border-[var(--border)] pt-4 sm:grid-cols-3">
+            {truck.vin && <Ficha rotulo="VIN / Chasis" valor={truck.vin} mono />}
+            {truck.engineNumber && (
+              <Ficha rotulo="Número de motor" valor={truck.engineNumber} mono />
+            )}
+            {truck.color && <Ficha rotulo="Color" valor={truck.color} />}
+            {truck.notes && (
+              <div className="sm:col-span-3">
+                <dt className="text-sm text-[var(--text-muted)]">
+                  Observaciones
+                </dt>
+                <dd className="mt-1 whitespace-pre-line">{truck.notes}</dd>
+              </div>
+            )}
+          </dl>
+        )}
+      </Section>
+
+      {/* ------------------------------- VIAJES ------------------------------ */}
+      <Section
+        id="viajes"
+        title="Viajes recientes"
+        count={truck._count.trips}
+        className="mb-8"
+        action={
+          truck._count.trips > viajes.length && (
+            <Enlace href={`/viajes?truckId=${truck.id}`}>
+              Ver los {truck._count.trips}
+            </Enlace>
+          )
+        }
+      >
+        <RecordList
+          vacio="Este vehículo todavía no tiene viajes registrados."
+          accion={
+            editable && (
+              <LinkButton
+                href={`/viajes/nuevo?truckId=${truck.id}`}
+                variant="secondary"
+                size="sm"
+              >
+                Registrar viaje
+              </LinkButton>
+            )
+          }
+        >
+          {viajes.map((v) => {
+            const estado = TRIP_STATUS[v.status];
+            return (
+              <RecordRow
+                key={v.id}
+                href={`/viajes/${v.id}`}
+                titulo={`${v.origin} → ${v.destination}`}
+                estado={
+                  <Badge tone={estado.tone} variant="quiet">
+                    {estado.label}
+                  </Badge>
+                }
+                meta={
+                  <>
+                    <span className="font-mono">{v.code}</span>
+                    {" · "}
+                    {date(v.departureAt)}
+                    {" · "}
+                    {/* Quien condujo ESE viaje, que puede no ser el asignado. */}
+                    {v.driver ? fullName(v.driver) : "Sin conductor"}
+                  </>
+                }
+                cifra={money(v.revenue, true)}
+                cifraRotulo={v.distanceKm ? km(v.distanceKm) : undefined}
+              />
+            );
+          })}
+        </RecordList>
+      </Section>
+
+      {/* --------------------------- MANTENIMIENTO --------------------------- */}
+      <Section
+        id="mantenimiento"
+        title="Mantenimiento"
+        count={truck._count.maintenances}
+        className="mb-8"
+        action={
+          editable && (
+            <MaintenanceModal trucks={trucks} defaultTruckId={truck.id} />
+          )
+        }
+      >
+        <RecordList vacio="Sin mantenimientos registrados para este vehículo.">
+          {mantenimientos.map((m) => {
+            const estado = MAINTENANCE_STATUS[m.status];
+            return (
+              <RecordRow
+                key={m.id}
+                titulo={m.title}
+                estado={
+                  <Badge tone={estado.tone} variant="quiet">
+                    {estado.label}
+                  </Badge>
+                }
+                meta={
+                  <>
+                    {MAINTENANCE_TYPE[m.type]}
+                    {" · "}
+                    {date(m.date)}
+                    {m.odometerKm ? ` · ${km(m.odometerKm)}` : ""}
+                    {m.workshop ? ` · ${m.workshop}` : ""}
+                  </>
+                }
+                cifra={money(m.cost, true)}
+                pie={
+                  /* Solo si el dato existe: no se inventa mantenimiento futuro. */
+                  (m.nextServiceDate || m.nextServiceKm) && (
+                    <span className="text-[var(--text-muted)]">
+                      Próximo:{" "}
+                      {[
+                        m.nextServiceDate ? date(m.nextServiceDate) : null,
+                        m.nextServiceKm ? km(m.nextServiceKm) : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  )
+                }
+              />
+            );
+          })}
+        </RecordList>
+      </Section>
+
+      {/* ------------------------------- GASTOS ------------------------------ */}
+      <Section
+        id="gastos"
+        title="Gastos recientes"
+        count={truck._count.expenses}
+        className="mb-8"
+        action={
+          editable && (
+            <ExpenseModal
+              trucks={truckOptions}
+              trips={tripOptions}
+              drivers={driverOptions}
+              defaultTruckId={truck.id}
+            />
+          )
+        }
+      >
+        <RecordList vacio="Sin gastos registrados para este vehículo.">
+          {gastos.map((g) => (
+            <RecordRow
+              key={g.id}
+              titulo={EXPENSE_CATEGORY[g.category]}
+              meta={
+                <>
+                  {date(g.date)}
+                  {g.description ? ` · ${g.description}` : ""}
+                  {g.supplier ? ` · ${g.supplier}` : ""}
+                  {g.trip ? ` · viaje ${g.trip.code}` : ""}
+                </>
+              }
+              cifra={money(g.amount)}
+              cifraRotulo={g.liters ? `${number(g.liters, 1)} L` : undefined}
+            />
+          ))}
+        </RecordList>
+      </Section>
+
+      {/* ----------------------------- DOCUMENTOS ---------------------------- */}
+      <Section
+        id="documentos"
+        title="Documentos"
+        count={truck._count.documents}
+        description="El vencimiento va completo y siempre visible: es el dato por el que se abre esta sección."
+        className="mb-8"
+        action={
+          editable && <DocumentModal owner={{ kind: "truck", id: truck.id }} />
+        }
+      >
+        <RecordList vacio="Sin documentos asociados a este vehículo.">
+          {documentos.map((d) => {
+            /*
+              Los mismos umbrales que ya usa el resto del producto, sin
+              duplicarlos: `alerts.ts` es la única definición de qué está
+              vencido, urgente o por vencer.
+            */
+            const dias = daysUntil(d.expiresAt);
+            const nivel =
+              dias < 0 ? "expired" : dias <= 7 ? "critical" : dias <= 30 ? "warning" : null;
+            return (
+              <RecordRow
+                key={d.id}
+                titulo={DOCUMENT_TYPE[d.type]}
+                estado={
+                  nivel ? (
+                    <Badge tone={ALERT_TONE[nivel]} variant="quiet">
+                      {ALERT_LABEL[nivel]}
+                    </Badge>
+                  ) : (
+                    <Badge tone="success" variant="quiet">
+                      Vigente
+                    </Badge>
+                  )
+                }
+                meta={
+                  <>
+                    {d.number ? `N.º ${d.number}` : "Sin número"}
+                    {d.issuer ? ` · ${d.issuer}` : ""}
+                  </>
+                }
+                cifra={date(d.expiresAt)}
+                cifraRotulo={relativeDays(dias)}
+                pie={
+                  /* La acción real disponible sobre un documento: abrir el
+                     archivo, cuando se subió alguno. */
+                  d.fileUrl && (
+                    <a
+                      href={d.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--r-control)] font-medium underline decoration-[var(--border-control)] decoration-2 underline-offset-4 transition-colors hover:decoration-[var(--accent)] focus-ring"
+                    >
+                      <FileText className="size-4 shrink-0" aria-hidden />
+                      Abrir archivo
+                    </a>
+                  )
+                }
+              />
+            );
+          })}
+        </RecordList>
+      </Section>
+
+      {/* ------------------------ HISTORIAL DE ASIGNACIÓN -------------------- */}
+      <Section
+        id="historial"
+        title="Historial de asignación"
+        count={historial.length}
+        description="Quién ha tenido este vehículo y desde cuándo. Es el registro operacional, no se deduce de los viajes."
+        className="mb-8"
+      >
+        <RecordList vacio="Este vehículo no tiene asignaciones registradas.">
+          {historial.map((a) => {
+            const vigente = a.endedAt === null;
+            return (
+              <RecordRow
+                key={a.id}
+                href={`/conductores/${a.driver.id}`}
+                titulo={fullName(a.driver)}
+                estado={
+                  vigente ? (
+                    <Badge tone="success" variant="quiet">
+                      Asignación vigente
+                    </Badge>
+                  ) : a.endReason ? (
+                    <Badge tone="neutral" variant="quiet">
+                      {ASSIGNMENT_END_REASON[a.endReason]}
+                    </Badge>
+                  ) : undefined
+                }
+                meta={
+                  <>
+                    {/*
+                      Cuando startedAt es null la fila viene de la migración y
+                      la fecha real no se conoce. Se dice; no se inventa, y no
+                      se rellena con el primer viaje.
+                    */}
+                    {a.startedAt ? (
+                      <>Desde el {date(a.startedAt)}</>
+                    ) : (
+                      <span className="italic">
+                        Inicio histórico no disponible
+                      </span>
+                    )}
+                    {a.endedAt ? <> · hasta el {date(a.endedAt)}</> : null}
+                    {a.source === "MIGRATION" && (
+                      <> · {ASSIGNMENT_SOURCE.MIGRATION}</>
+                    )}
+                  </>
+                }
+              />
+            );
+          })}
+        </RecordList>
+      </Section>
+
+      {/* ---------------------------- ZONA DE RIESGO -------------------------- */}
+      {editable && (
+        <Section title="Salida de la flota" className="mb-8">
+          <div className="flex flex-col gap-4 rounded-[var(--r-surface)] border border-[var(--border)] px-4 py-4">
+            <p className="max-w-prose text-[var(--text-muted)]">
+              Archivar saca el vehículo de la flota activa y conserva su
+              expediente completo. Eliminar borra también sus{" "}
+              {truck._count.trips} viajes, {truck._count.expenses} gastos,{" "}
+              {truck._count.maintenances} mantenimientos y{" "}
+              {truck._count.documents} documentos, y no se puede deshacer.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
               <form action={archiveTruck}>
                 <input type="hidden" name="truckId" value={truck.id} />
                 <input
@@ -142,508 +690,90 @@ export default async function TruckDetailPage({
                 >
                   {truck.archived ? (
                     <>
-                      <ArchiveRestore className="size-4" />
-                      Restaurar
+                      <ArchiveRestore className="size-5" aria-hidden />
+                      Restaurar a la flota
                     </>
                   ) : (
                     <>
-                      <Archive className="size-4" />
-                      Archivar
+                      <Archive className="size-5" aria-hidden />
+                      Archivar vehículo
                     </>
                   )}
                 </ConfirmButton>
               </form>
-            </>
-          )
-        }
-      />
-
-      {/* Ficha principal: foto + datos */}
-      <div className="mb-5 grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <Card className="overflow-hidden">
-          <div className="aspect-[16/10] bg-[var(--surface-2)]">
-            {truck.photoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={truck.photoUrl}
-                alt={`Camión ${truck.plate}`}
-                className="size-full object-cover"
-              />
-            ) : (
-              <div className="flex size-full flex-col items-center justify-center gap-2 text-[var(--text-muted)]">
-                <TruckIcon className="size-10" />
-                <span className="text-sm">Sin foto cargada</span>
-                {editable && (
-                  <Link
-                    href={`${basePath}/editar`}
-                    className="rounded text-sm font-medium text-[var(--brand)] underline decoration-2 underline-offset-4 decoration-[var(--border-control)] hover:decoration-[var(--brand)] focus-ring"
-                  >
-                    Subir una foto
-                  </Link>
-                )}
-              </div>
-            )}
+              <form action={deleteTruck}>
+                <input type="hidden" name="truckId" value={truck.id} />
+                <ConfirmButton
+                  size="md"
+                  message={`¿Eliminar definitivamente el vehículo ${truck.plate}? Se borrarán ${truck._count.trips} viajes, ${truck._count.expenses} gastos, ${truck._count.maintenances} mantenimientos y ${truck._count.documents} documentos. Esta acción NO se puede deshacer.`}
+                >
+                  <Trash2 className="size-5" aria-hidden />
+                  Eliminar
+                </ConfirmButton>
+              </form>
+            </div>
           </div>
-          <div className="border-t border-[var(--border)] px-5 py-4">
-            <dl className="grid grid-cols-2 gap-4">
-              <DataItem label="Kilometraje">{km(truck.odometerKm)}</DataItem>
-              <DataItem label="Tipo">{TRUCK_KIND[truck.kind]}</DataItem>
-              <DataItem label="Capacidad">
-                {truck.capacityKg ? `${number(truck.capacityKg)} kg` : "—"}
-              </DataItem>
-              <DataItem label="Ejes">{truck.axles ?? "—"}</DataItem>
-              <DataItem label="Conductor">
-                {truck.currentDriver ? (
-                  <Link
-                    href={`/conductores/${truck.currentDriver.id}`}
-                    className="rounded text-[var(--brand)] underline decoration-2 underline-offset-4 decoration-[var(--border-control)] hover:decoration-[var(--brand)] focus-ring"
-                  >
-                    {fullName(truck.currentDriver)}
-                  </Link>
-                ) : (
-                  "Sin asignar"
-                )}
-              </DataItem>
-              <DataItem label="Combustible">{truck.fuelType ?? "—"}</DataItem>
-            </dl>
-          </div>
-        </Card>
-
-        {/*
-          Tres cifras, no seis. Las otras (ingresos, egresos, combustible)
-          bajaron a la pestaña Resumen: siguen estando, pero no compiten con
-          lo que de verdad se mira primero en un camión.
-        */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:col-span-2 lg:content-start">
-          <StatCard
-            label="Ganancia"
-            value={money(finance.utilidad, true)}
-            hint={
-              finance.margen !== null
-                ? `Margen ${percent(finance.margen)} · ${finance.tripCount} viajes`
-                : "Sin ingresos registrados"
-            }
-            icon={<TrendingUp className="size-5" />}
-            tone={finance.utilidad >= 0 ? "success" : "danger"}
-          />
-          <StatCard
-            label="Costo por kilómetro"
-            value={
-              finance.costoPorKm !== null ? money(finance.costoPorKm) : "—"
-            }
-            hint={`${km(finance.km)} recorridos`}
-            icon={<Gauge className="size-5" />}
-            tone="info"
-          />
-          <StatCard
-            label="Rendimiento"
-            value={
-              fuel.kmPerLiter !== null
-                ? `${number(fuel.kmPerLiter, 2)} km/L`
-                : "—"
-            }
-            hint={`${fuel.fillUps} tanqueos`}
-            icon={<Fuel className="size-5" />}
-            tone="neutral"
-          />
-        </div>
-      </div>
-
-      <Tabs
-        active={tab}
-        basePath={basePath}
-        tabs={[
-          { key: "", label: "Resumen" },
-          { key: "viajes", label: "Viajes", count: truck._count.trips },
-          {
-            key: "mantenimiento",
-            label: "Mantenimiento",
-            count: truck._count.maintenances,
-          },
-          { key: "gastos", label: "Gastos", count: truck._count.expenses },
-          {
-            key: "documentos",
-            label: "Documentos",
-            count: truck._count.documents,
-          },
-        ]}
-      />
-
-      {tab === "" && (
-        <ResumenTab
-          truck={truck}
-          series={series}
-          finance={finance}
-          fuel={fuel}
-        />
-      )}
-      {tab === "viajes" && <ViajesTab truckId={truck.id} editable={editable} />}
-      {tab === "mantenimiento" && (
-        <MantenimientoTab
-          truckId={truck.id}
-          editable={editable}
-          trucks={trucks}
-        />
-      )}
-      {tab === "gastos" && (
-        <GastosTab truckId={truck.id} editable={editable} trucks={trucks} />
-      )}
-      {tab === "documentos" && (
-        <DocumentosTab truckId={truck.id} editable={editable} />
-      )}
-
-      {editable && tab === "" && (
-        <Card className="mt-5 border-[var(--tone-danger-bg)]">
-          <CardHeader
-            title="Zona de riesgo"
-            description="Eliminar el camión borra también sus viajes, cargas, gastos, mantenimientos y documentos. Si solo querés sacarlo de circulación, usá «Archivar»."
-          />
-          <div className="px-5 py-4">
-            <form action={deleteTruck}>
-              <input type="hidden" name="truckId" value={truck.id} />
-              <ConfirmButton
-                size="md"
-                message={`¿Eliminar definitivamente el camión ${truck.plate}? Se borrarán ${truck._count.trips} viajes, ${truck._count.expenses} gastos, ${truck._count.maintenances} mantenimientos y ${truck._count.documents} documentos. Esta acción NO se puede deshacer.`}
-              >
-                <Trash2 className="size-4" />
-                Eliminar camión
-              </ConfirmButton>
-            </form>
-          </div>
-        </Card>
+        </Section>
       )}
     </>
   );
 }
 
-// --- pestañas ---------------------------------------------------------------
-
-/** Una cifra secundaria dentro del resumen. */
-function Cifra({ rotulo, valor }: { rotulo: string; valor: string }) {
+/** Una cifra del resumen: rótulo arriba, número abajo. Sin caja. */
+function Cifra({
+  rotulo,
+  valor,
+  nota,
+  tono,
+}: {
+  rotulo: string;
+  valor: string;
+  nota?: string;
+  tono?: "success" | "danger";
+}) {
   return (
-    <div className="px-5 py-4">
-      <dt className="text-sm font-medium text-[var(--text-muted)]">{rotulo}</dt>
-      <dd className="mt-0.5 text-lg font-semibold tabular-nums">{valor}</dd>
+    <div className="border-b border-[var(--border)] py-3">
+      <dt className="text-sm text-[var(--text-muted)]">{rotulo}</dt>
+      <dd
+        className="font-mono text-xl font-semibold tabular-nums"
+        style={
+          tono ? { color: `var(--tone-${tono}-fg)` } : undefined
+        }
+      >
+        {valor}
+      </dd>
+      {nota && (
+        <dd className="text-sm text-[var(--text-muted)]">{nota}</dd>
+      )}
     </div>
   );
 }
 
-async function ResumenTab({
-  truck,
-  series,
-  finance,
-  fuel,
+/** Dato técnico del vehículo. Solo se dibuja si existe. */
+function Ficha({
+  rotulo,
+  valor,
+  mono = false,
 }: {
-  truck: {
-    id: string;
-    vin: string | null;
-    engineNumber: string | null;
-    color: string | null;
-    tankLiters: number | null;
-    purchaseDate: Date | null;
-    purchasePrice: number | null;
-    notes: string | null;
-    createdAt: Date;
-  };
-  series: Awaited<ReturnType<typeof getMonthlySeries>>;
-  finance: Awaited<ReturnType<typeof getTruckFinancials>>;
-  fuel: Awaited<ReturnType<typeof getFuelStats>>;
+  rotulo: string;
+  valor: string;
+  mono?: boolean;
 }) {
-  const recentTrips = await prisma.trip.findMany({
-    where: { truckId: truck.id },
-    orderBy: { departureAt: "desc" },
-    take: 5,
-    include: {
-      truck: { select: { id: true, plate: true } },
-      driver: { select: { firstName: true, lastName: true } },
-      _count: { select: { cargos: true } },
-    },
-  });
-
   return (
-    <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-      <Card className="xl:col-span-2">
-        <CardHeader
-          title="Cuánto entró y cuánto salió"
-          description="Últimos 6 meses de este camión"
-        />
-        <div className="px-3 py-4">
-          <RevenueChart data={series} />
-        </div>
-        <dl className="grid grid-cols-2 divide-x divide-y divide-[var(--border)] border-t border-[var(--border)] sm:grid-cols-4 sm:divide-y-0">
-          <Cifra rotulo="Ingresos" valor={money(finance.ingresos, true)} />
-          <Cifra rotulo="Gastos" valor={money(finance.gastos, true)} />
-          <Cifra rotulo="Taller" valor={money(finance.taller, true)} />
-          <Cifra rotulo="Combustible" valor={money(fuel.cost, true)} />
-        </dl>
-      </Card>
-
-      <Card>
-        <CardHeader title="Datos del vehículo" />
-        <div className="px-5 py-4">
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-1">
-            <DataItem label="VIN / Chasis">{truck.vin ?? "—"}</DataItem>
-            <DataItem label="Número de motor">
-              {truck.engineNumber ?? "—"}
-            </DataItem>
-            <DataItem label="Color">{truck.color ?? "—"}</DataItem>
-            <DataItem label="Tanque">
-              {truck.tankLiters ? `${number(truck.tankLiters)} L` : "—"}
-            </DataItem>
-            <DataItem label="Fecha de compra">
-              {date(truck.purchaseDate)}
-            </DataItem>
-            <DataItem label="Precio de compra">
-              {truck.purchasePrice ? money(truck.purchasePrice) : "—"}
-            </DataItem>
-            <DataItem label="Alta en el sistema">
-              {date(truck.createdAt)}
-            </DataItem>
-          </dl>
-          {truck.notes && (
-            <div className="mt-4 rounded-lg bg-[var(--surface-2)] p-3">
-              <p className="text-sm font-medium uppercase tracking-wide text-[var(--text-muted)]">
-                Observaciones
-              </p>
-              <p className="mt-1 whitespace-pre-line text-sm">
-                {truck.notes}
-              </p>
-            </div>
-          )}
-        </div>
-      </Card>
-
-      <Card className="xl:col-span-3">
-        <CardHeader
-          title="Últimos viajes"
-          icon={<Route className="size-4" />}
-          action={
-            <Link
-              href={`/camiones/${truck.id}?tab=viajes`}
-              className="rounded text-sm font-medium text-[var(--brand)] underline decoration-2 underline-offset-4 decoration-[var(--border-control)] hover:decoration-[var(--brand)] focus-ring"
-            >
-              Ver todos
-            </Link>
-          }
-        />
-        <TripTable
-          trips={recentTrips}
-          showTruck={false}
-          emptyMessage="Este camión todavía no tiene viajes registrados."
-        />
-      </Card>
+    <div className="py-1">
+      <dt className="text-sm text-[var(--text-muted)]">{rotulo}</dt>
+      <dd className={mono ? "font-mono" : undefined}>{valor}</dd>
     </div>
   );
 }
 
-async function ViajesTab({
-  truckId,
-  editable,
-}: {
-  truckId: string;
-  editable: boolean;
-}) {
-  const trips = await prisma.trip.findMany({
-    where: { truckId },
-    orderBy: { departureAt: "desc" },
-    include: {
-      truck: { select: { id: true, plate: true } },
-      driver: { select: { firstName: true, lastName: true } },
-      _count: { select: { cargos: true } },
-    },
-  });
-
+function Enlace({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Card>
-      <CardHeader
-        title="Historial de viajes"
-        description={`${trips.length} viaje${trips.length === 1 ? "" : "s"} registrados`}
-        action={
-          editable && (
-            <LinkButton href={`/viajes/nuevo?truckId=${truckId}`} size="sm">
-              Nuevo viaje
-            </LinkButton>
-          )
-        }
-      />
-      <TripTable
-        trips={trips}
-        showTruck={false}
-        emptyMessage="Este camión todavía no tiene viajes registrados."
-        action={
-          editable && (
-            <LinkButton href={`/viajes/nuevo?truckId=${truckId}`} size="sm">
-              Registrar viaje
-            </LinkButton>
-          )
-        }
-      />
-    </Card>
-  );
-}
-
-async function MantenimientoTab({
-  truckId,
-  editable,
-  trucks,
-}: {
-  truckId: string;
-  editable: boolean;
-  trucks: { id: string; plate: string; nickname: string | null }[];
-}) {
-  const rows = await prisma.maintenance.findMany({
-    where: { truckId },
-    orderBy: { date: "desc" },
-    include: { truck: { select: { id: true, plate: true } } },
-  });
-
-  const total = rows
-    .filter((r) => r.status !== "CANCELLED")
-    .reduce((acc, r) => acc + r.cost, 0);
-
-  return (
-    <Card>
-      <CardHeader
-        title="Mantenimientos"
-        description={`${rows.length} registros · ${money(total)} invertidos`}
-        action={
-          editable && (
-            <MaintenanceModal trucks={trucks} defaultTruckId={truckId} />
-          )
-        }
-      />
-      <MaintenanceTable
-        rows={rows}
-        showTruck={false}
-        canEdit={editable}
-        trucks={trucks}
-        defaultTruckId={truckId}
-        action={
-          editable && (
-            <MaintenanceModal trucks={trucks} defaultTruckId={truckId} />
-          )
-        }
-      />
-    </Card>
-  );
-}
-
-async function GastosTab({
-  truckId,
-  editable,
-  trucks,
-}: {
-  truckId: string;
-  editable: boolean;
-  trucks: { id: string; plate: string; nickname: string | null }[];
-}) {
-  const [rows, trips, drivers] = await Promise.all([
-    prisma.expense.findMany({
-      where: { truckId },
-      orderBy: { date: "desc" },
-      take: 200,
-      include: {
-        truck: { select: { id: true, plate: true } },
-        trip: { select: { id: true, code: true } },
-      },
-    }),
-    prisma.trip.findMany({
-      where: { truckId },
-      orderBy: { departureAt: "desc" },
-      take: 60,
-      select: { id: true, code: true, origin: true, destination: true },
-    }),
-    prisma.driver.findMany({
-      where: { archived: false },
-      orderBy: { firstName: "asc" },
-      select: { id: true, firstName: true, lastName: true },
-    }),
-  ]);
-
-  const total = rows.reduce((acc, r) => acc + r.amount, 0);
-  const truckOptions = trucks.map((t) => ({ id: t.id, label: t.plate }));
-  const tripOptions = trips.map((t) => ({
-    id: t.id,
-    label: `${t.code} — ${t.origin} → ${t.destination}`,
-  }));
-  const driverOptions = drivers.map((d) => ({
-    id: d.id,
-    label: fullName(d),
-  }));
-
-  return (
-    <Card>
-      <CardHeader
-        title="Gastos del camión"
-        description={`${rows.length} movimientos · ${money(total)} en total`}
-        action={
-          editable && (
-            <ExpenseModal
-              trucks={truckOptions}
-              trips={tripOptions}
-              drivers={driverOptions}
-              defaultTruckId={truckId}
-            />
-          )
-        }
-      />
-      <ExpenseTable
-        rows={rows}
-        showTruck={false}
-        canEdit={editable}
-        trucks={truckOptions}
-        trips={tripOptions}
-        drivers={driverOptions}
-        defaultTruckId={truckId}
-        action={
-          editable && (
-            <ExpenseModal
-              trucks={truckOptions}
-              trips={tripOptions}
-              drivers={driverOptions}
-              defaultTruckId={truckId}
-            />
-          )
-        }
-      />
-    </Card>
-  );
-}
-
-async function DocumentosTab({
-  truckId,
-  editable,
-}: {
-  truckId: string;
-  editable: boolean;
-}) {
-  const rows = await prisma.document.findMany({
-    where: { truckId },
-    orderBy: { expiresAt: "asc" },
-    include: {
-      truck: { select: { id: true, plate: true } },
-      driver: { select: { id: true, firstName: true, lastName: true } },
-    },
-  });
-
-  return (
-    <Card>
-      <CardHeader
-        title="Documentos del vehículo"
-        description="SOAT, tecnomecánica, pólizas y permisos. Las alertas aparecen 30 días antes del vencimiento."
-        action={
-          editable && <DocumentModal owner={{ kind: "truck", id: truckId }} />
-        }
-      />
-      <DocumentTable
-        rows={rows}
-        showOwner={false}
-        canEdit={editable}
-        owner={{ kind: "truck", id: truckId }}
-        action={
-          editable && <DocumentModal owner={{ kind: "truck", id: truckId }} />
-        }
-      />
-    </Card>
+    <Link
+      href={href}
+      className="inline-flex min-h-11 items-center rounded-[var(--r-control)] font-medium underline decoration-[var(--border-control)] decoration-2 underline-offset-4 transition-colors hover:decoration-[var(--accent)] focus-ring"
+    >
+      {children}
+    </Link>
   );
 }

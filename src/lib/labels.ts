@@ -1,4 +1,6 @@
 import type {
+  AssignmentEndReason,
+  AssignmentSource,
   CargoStatus,
   CargoUnit,
   DocumentType,
@@ -102,6 +104,23 @@ export const MAINTENANCE_STATUS: Meta<MaintenanceStatus> = {
   IN_PROGRESS: { label: "En proceso", tone: "info" },
   COMPLETED: { label: "Realizado", tone: "success" },
   CANCELLED: { label: "Cancelado", tone: "neutral" },
+};
+
+/*
+  Vocabulario de las asignaciones. Faltaba: `assignments.ts` guarda los enums en
+  inglés y hasta ahora ninguna pantalla los mostraba, así que no había
+  traducción. El historial del vehículo es la primera que los enseña.
+*/
+export const ASSIGNMENT_END_REASON: Record<AssignmentEndReason, string> = {
+  REASSIGNED: "Reasignado",
+  RELEASED: "Liberado",
+  ARCHIVED: "Archivado",
+  CANCELLED: "Anulado",
+};
+
+export const ASSIGNMENT_SOURCE: Record<AssignmentSource, string> = {
+  MANUAL: "Registro manual",
+  MIGRATION: "Reconstruido de datos anteriores",
 };
 
 export const EXPENSE_CATEGORY: Record<ExpenseCategory, string> = {

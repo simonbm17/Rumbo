@@ -23,9 +23,21 @@ import { money } from "@/lib/format";
  * El dato tiene que estar completo apenas carga, y una barra que crece desde
  * cero es justo lo que rompe con `prefers-reduced-motion`.
  */
-export function RevenueChart({ data }: { data: MonthPoint[] }) {
+export function RevenueChart({
+  data,
+  alto = "h-72",
+}: {
+  data: MonthPoint[];
+  /*
+    Alto opcional. El valor por defecto es el de siempre, así que Reportes no
+    cambia. El expediente del vehículo la pide más baja en teléfono, donde 288px
+    se comen un tercio de la pantalla; es un ajuste de presentación y no toca ni
+    los datos ni el cálculo.
+  */
+  alto?: string;
+}) {
   return (
-    <div className="h-72 w-full">
+    <div className={`w-full ${alto}`}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid

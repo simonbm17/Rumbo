@@ -12,12 +12,22 @@ const BASE =
   "inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-colors focus-ring disabled:opacity-55 disabled:pointer-events-none whitespace-nowrap";
 
 /**
- * Ningún botón baja de 40px de alto, y el tamaño normal usa los 44px que
- * recomienda WCAG como objetivo táctil. `sm` queda para acciones densas
- * dentro de tablas, donde siempre va acompañado de un `title`.
+ * NINGÚN botón baja de 44px de alto, el objetivo táctil que exige el producto.
+ *
+ * `sm` medía 40px. Inspeccioné sus doce consumidores antes de tocar nada: los
+ * cuatro disparadores de modal, «Archivados», «Registrar viaje», «Nuevo viaje»,
+ * los tres «Ver todos» del panel y los de clientes y conductores. En ninguno de
+ * esos contextos 40px estaba permitido —la constitución dice 44px para
+ * CUALQUIER control, sin excepción—, así que no era un tamaño legítimo usado en
+ * otro sitio: era la misma infracción repetida doce veces. Se corrige en la
+ * escala, no con un tamaño nuevo para tres botones.
+ *
+ * `sm` sigue siendo distinto de `md`: menos relleno horizontal y texto de 14px.
+ * Lo único que cambió es la altura tocable. Queda para acciones densas dentro
+ * de tablas y cabeceras de sección.
  */
 const SIZES: Record<Size, string> = {
-  sm: "h-10 px-3 text-sm",
+  sm: "h-11 px-3 text-sm",
   md: "h-11 px-4 text-base",
   lg: "h-12 px-5 text-base",
 };

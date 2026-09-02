@@ -26,7 +26,13 @@ export function StatusSwitcher({
         name="status"
         defaultValue={status}
         onChange={() => formRef.current?.requestSubmit()}
-        className="input-base w-auto min-w-[190px]"
+        /*
+          Sin ancho mínimo fijo: en un teléfono los 190px obligaban al selector
+          a bajar a su propia línea, debajo de «Editar vehículo», y sumaban
+          56px justo antes del expediente. Ahora comparte fila y crece cuando
+          hay sitio.
+        */
+        className="input-base w-auto min-w-0 flex-1 sm:min-w-[190px] sm:flex-none"
       >
         {toOptions(TRUCK_STATUS).map((option) => (
           <option key={option.value} value={option.value}>
