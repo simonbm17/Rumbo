@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireWriter } from "@/lib/auth";
 import { logActivity } from "@/lib/activity";
+import { cerrarPorArchivarConductor } from "@/lib/assignments";
 import { deleteUpload, resolvePhotoField } from "@/lib/storage";
 import { DriverStatus } from "@/generated/prisma/enums";
 import {
@@ -116,18 +117,35 @@ export async function archiveDriver(formData: FormData) {
   const driverId = String(formData.get("driverId"));
   const archived = formData.get("archived") !== "false";
 
-  const driver = await prisma.driver.update({
-    where: { id: driverId },
-    data: { archived, status: archived ? "INACTIVE" : "ACTIVE" },
-  });
+  /*
+    Archivar es UNA operación, no dos.
 
-  // Un conductor archivado no puede seguir asignado a un camión.
-  if (archived) {
-    await prisma.truck.updateMany({
-      where: { currentDriverId: driverId },
-      data: { currentDriverId: null },
+    Antes esto hacía dos escrituras sueltas: archivaba al conductor y después
+    ponía `Truck.currentDriverId` en NULL con un `updateMany` propio. La
+    asignación quedaba abierta —`endedAt IS NULL`— mientras el vehículo ya no
+    reconocía a nadie: la fuente de verdad y su proyección apuntando a cosas
+    distintas. Y si la segunda escritura fallaba, quedaba un conductor
+    archivado que seguía figurando como asignado.
+
+    Ahora las dos van dentro de la misma transacción y el cierre lo hace
+    `cerrarPorArchivarConductor`, que ya existía para esto: encuentra la
+    asignación vigente, le pone `endedAt`, la marca con `endReason = ARCHIVED`,
+    registra quién la cerró y sincroniza la proyección del vehículo. No se
+    duplica esa lógica acá.
+
+    Si no hay asignación vigente no pasa nada: el helper usa `updateMany`, que
+    devuelve cero sin lanzar. Y el historial cerrado no se toca, porque el
+    filtro es `endedAt: null`.
+  */
+  const driver = await prisma.$transaction(async (tx) => {
+    if (archived) {
+      await cerrarPorArchivarConductor(tx, driverId, user.id);
+    }
+    return tx.driver.update({
+      where: { id: driverId },
+      data: { archived, status: archived ? "INACTIVE" : "ACTIVE" },
     });
-  }
+  });
 
   await logActivity({
     userId: user.id,

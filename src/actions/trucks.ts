@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireWriter } from "@/lib/auth";
 import { logActivity } from "@/lib/activity";
+import { cerrarPorArchivarVehiculo } from "@/lib/assignments";
 import { deleteUpload, resolvePhotoField } from "@/lib/storage";
 import { TruckKind, TruckStatus } from "@/generated/prisma/enums";
 import {
@@ -154,9 +155,34 @@ export async function archiveTruck(formData: FormData) {
   const truckId = String(formData.get("truckId"));
   const archived = formData.get("archived") !== "false";
 
-  const truck = await prisma.truck.update({
-    where: { id: truckId },
-    data: { archived, status: archived ? "INACTIVE" : "ACTIVE" },
+  /*
+    El defecto simétrico al de `archiveDriver`, y peor: acá no se hacía NADA
+    con la asignación. Archivar un vehículo lo sacaba de la flota dejando su
+    `DriverAssignment` abierta —`endedAt IS NULL`— y además el
+    `Truck.currentDriverId` intacto, apuntando a una persona que ya no lo
+    conduce. El conductor seguía figurando con un vehículo archivado.
+
+    `cerrarPorArchivarVehiculo` ya existía para esto: cierra la vigente con
+    `endReason = ARCHIVED`, registra quién la cerró y pone la proyección en
+    NULL. Va en la misma transacción que el archivado para que las dos cosas se
+    confirmen o fallen juntas.
+
+    Solo al archivar. Restaurar NO reabre la asignación: volver a asignar un
+    conductor es una decisión de la operación, no un efecto secundario de sacar
+    el vehículo del archivo.
+
+    Lo que no toca: el conductor sigue activo, sus asignaciones históricas
+    quedan como estaban y los viajes no se modifican. Quién condujo qué es un
+    hecho, y archivar el vehículo no lo cambia.
+  */
+  const truck = await prisma.$transaction(async (tx) => {
+    if (archived) {
+      await cerrarPorArchivarVehiculo(tx, truckId, user.id);
+    }
+    return tx.truck.update({
+      where: { id: truckId },
+      data: { archived, status: archived ? "INACTIVE" : "ACTIVE" },
+    });
   });
 
   await logActivity({
