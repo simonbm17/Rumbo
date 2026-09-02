@@ -37,6 +37,7 @@ export function FleetStatusBar({
   estadoActivo,
   basePath,
   queryString,
+  etiquetaAlertas = (n) => (n === 1 ? "con alerta" : "con alertas"),
 }: {
   conteos: ConteoEstado[];
   /** Vehículos con documento vencido o mantenimiento próximo. */
@@ -45,6 +46,14 @@ export function FleetStatusBar({
   basePath: string;
   /** Query string vigente: filtrar por estado no puede borrar el contexto. */
   queryString: string;
+  /*
+    Cómo se nombra el recuento de alertas. Opcional y con el texto de siempre
+    por defecto, así Vehículos no cambia. Existe porque en el Panel esta franja
+    convive con otro recuento —el de la sección «Necesita atención»— que cuenta
+    otra unidad, y dos números vecinos que no dicen qué cuentan se leen como una
+    contradicción. Acá la unidad son VEHÍCULOS; allá, situaciones.
+  */
+  etiquetaAlertas?: (n: number) => string;
 }) {
   const total = conteos.reduce((acc, c) => acc + c.total, 0);
   if (total === 0) return null;
@@ -133,7 +142,7 @@ export function FleetStatusBar({
                 {conAlertas}
               </span>
               <span className="text-sm font-medium underline decoration-2 underline-offset-4">
-                {conAlertas === 1 ? "con alerta" : "con alertas"}
+                {etiquetaAlertas(conAlertas)}
               </span>
             </Link>
           </>
