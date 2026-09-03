@@ -128,7 +128,7 @@ export function Shell({
             bloque y es el único uso del color de identidad en el menú.
           */}
           <Link
-            href="/"
+            href="/panel"
             onClick={cerrar}
             className="flex min-h-11 min-w-0 items-center gap-3 rounded-[var(--r-control)] focus-ring"
           >

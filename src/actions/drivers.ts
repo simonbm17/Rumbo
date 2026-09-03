@@ -66,7 +66,7 @@ export async function createDriver(
   }
 
   revalidatePath("/conductores");
-  revalidatePath("/");
+  revalidatePath("/panel");
   redirect(`/conductores/${id}`);
 }
 

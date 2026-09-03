@@ -43,7 +43,7 @@ function revalidate(truckId: string) {
   revalidatePath(`/camiones/${truckId}`);
   revalidatePath("/camiones");
   revalidatePath("/reportes");
-  revalidatePath("/");
+  revalidatePath("/panel");
 }
 
 export async function createMaintenance(

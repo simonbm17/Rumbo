@@ -179,7 +179,7 @@ export async function createTrip(
 
   revalidatePath("/viajes");
   revalidatePath("/camiones");
-  revalidatePath("/");
+  revalidatePath("/panel");
   redirect(`/viajes/${id}`);
 }
 
@@ -209,7 +209,7 @@ export async function updateTrip(
   revalidatePath("/viajes");
   revalidatePath(`/viajes/${tripId}`);
   revalidatePath("/camiones");
-  revalidatePath("/");
+  revalidatePath("/panel");
   redirect(`/viajes/${tripId}`);
 }
 
@@ -246,7 +246,7 @@ export async function setTripStatus(formData: FormData) {
   revalidatePath("/viajes");
   revalidatePath(`/viajes/${tripId}`);
   revalidatePath("/camiones");
-  revalidatePath("/");
+  revalidatePath("/panel");
 }
 
 export async function deleteTrip(formData: FormData) {
@@ -265,6 +265,6 @@ export async function deleteTrip(formData: FormData) {
 
   revalidatePath("/viajes");
   revalidatePath("/camiones");
-  revalidatePath("/");
+  revalidatePath("/panel");
   redirect("/viajes");
 }

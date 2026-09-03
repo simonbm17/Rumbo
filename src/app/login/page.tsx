@@ -14,7 +14,7 @@ const PUNTOS = [
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const session = await getSession();
-  if (session) redirect("/");
+  if (session) redirect("/panel");
 
   const params = await searchParams;
   const notice =

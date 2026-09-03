@@ -15,7 +15,7 @@ export default function NotFound() {
           correcto.
         </p>
       </div>
-      <Link href="/" className={buttonClass("primary")}>
+      <Link href="/panel" className={buttonClass("primary")}>
         Volver al panel
       </Link>
     </div>

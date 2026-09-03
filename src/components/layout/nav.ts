@@ -31,7 +31,7 @@ export const NAV: NavGroup[] = [
   {
     title: "Operación",
     items: [
-      { href: "/", label: "Panel", icon: Gauge },
+      { href: "/panel", label: "Panel", icon: Gauge },
       { href: "/camiones", label: "Vehículos", icon: Truck },
       { href: "/viajes", label: "Viajes", icon: Route },
       { href: "/conductores", label: "Conductores", icon: Users },
@@ -62,7 +62,12 @@ export const NAV: NavGroup[] = [
 ];
 
 /** Marca activo el ítem cuya ruta coincide o es prefijo de la actual. */
+/*
+  Ya no hay caso especial para «/». Lo hubo mientras el Panel vivía en la raíz:
+  como «/» es prefijo de todas las rutas, `startsWith` lo habría marcado activo
+  en cualquier pantalla. El Panel está en `/panel` y la raíz es la landing
+  pública, que ni siquiera monta este menú.
+*/
 export function isActive(href: string, pathname: string) {
-  if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
 }

@@ -76,7 +76,7 @@ export async function createTruck(
   }
 
   revalidatePath("/camiones");
-  revalidatePath("/");
+  revalidatePath("/panel");
   redirect(`/camiones/${id}`);
 }
 
@@ -119,7 +119,7 @@ export async function updateTruck(
 
   revalidatePath("/camiones");
   revalidatePath(`/camiones/${truckId}`);
-  revalidatePath("/");
+  revalidatePath("/panel");
   redirect(`/camiones/${truckId}`);
 }
 
@@ -220,6 +220,6 @@ export async function deleteTruck(formData: FormData) {
   });
 
   revalidatePath("/camiones");
-  revalidatePath("/");
+  revalidatePath("/panel");
   redirect("/camiones");
 }

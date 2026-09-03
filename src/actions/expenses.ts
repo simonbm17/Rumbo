@@ -50,7 +50,7 @@ function readForm(formData: FormData) {
 function revalidate(truckId?: string | null, tripId?: string | null) {
   revalidatePath("/gastos");
   revalidatePath("/reportes");
-  revalidatePath("/");
+  revalidatePath("/panel");
   if (truckId) revalidatePath(`/camiones/${truckId}`);
   if (tripId) revalidatePath(`/viajes/${tripId}`);
 }

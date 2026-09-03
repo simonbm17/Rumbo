@@ -16,7 +16,7 @@ export const metadata = { title: "Usuarios" };
 
 export default async function UsersPage() {
   const current = await requireUser();
-  if (!canAdmin(current)) redirect("/");
+  if (!canAdmin(current)) redirect("/panel");
 
   const users = await prisma.user.findMany({
     orderBy: [{ active: "desc" }, { name: "asc" }],

@@ -41,7 +41,7 @@ function readForm(formData: FormData) {
 
 function revalidate(truckId?: string | null, driverId?: string | null) {
   revalidatePath("/documentos");
-  revalidatePath("/");
+  revalidatePath("/panel");
   if (truckId) revalidatePath(`/camiones/${truckId}`);
   if (driverId) revalidatePath(`/conductores/${driverId}`);
 }

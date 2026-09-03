@@ -13,7 +13,7 @@ export const metadata = { title: "Configuración" };
 
 export default async function SettingsPage() {
   const user = await requireUser();
-  if (!canAdmin(user)) redirect("/");
+  if (!canAdmin(user)) redirect("/panel");
 
   const [company, counts] = await Promise.all([
     getCompanySettings(),

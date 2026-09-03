@@ -89,7 +89,7 @@ export async function loginAction(
     role: user.role,
   });
 
-  redirect("/");
+  redirect("/panel");
 }
 
 export async function logoutAction() {
