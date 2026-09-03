@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogOut, Menu, Moon, Sun, X } from "lucide-react";
@@ -26,14 +26,68 @@ export function Shell({
 }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const close = () => setOpen(false);
+  const cajon = useRef<HTMLElement>(null);
+  const abridor = useRef<HTMLButtonElement>(null);
+  const cerrador = useRef<HTMLButtonElement>(null);
+
+  /*
+    El mismo umbral que fija `.app-nav` en globals.css. Se repite acá porque
+    `inert` es un atributo del HTML y no hay forma de ponerlo desde una media
+    query; si aquel umbral cambia, este tiene que cambiar con él.
+
+    Arranca en `true` —comportamiento de escritorio— a propósito: es el valor
+    que renderiza el servidor, y así el menú fijo nunca sale inerte ni por un
+    instante. En móvil lo corrige el efecto en cuanto monta.
+  */
+  const [fijo, setFijo] = useState(true);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const leer = () => setFijo(mq.matches);
+    leer();
+    mq.addEventListener("change", leer);
+    return () => mq.removeEventListener("change", leer);
+  }, []);
+
+  /*
+    Al cerrar, el foco vuelve al botón que abrió. Sin esto se quedaba dentro
+    del cajón, que en ese momento pasa a ser inerte, y el navegador lo mandaba
+    al principio del documento: quien navega con teclado perdía el sitio.
+
+    Solo se devuelve si el foco estaba realmente dentro del cajón. Si alguien
+    cerró con el ratón desde otro punto de la página, moverle el foco sería
+    peor que no hacer nada.
+  */
+  const cerrar = useCallback(() => {
+    const devolver =
+      !fijo && !!cajon.current?.contains(document.activeElement);
+    setOpen(false);
+    if (devolver) abridor.current?.focus();
+  }, [fijo]);
+
+  /*
+    Con el cajón abierto, el foco entra en él y Escape lo cierra.
+
+    Lo de entrar hace falta porque el `aside` va ANTES de la cabecera en el
+    documento: pulsar Tab tras abrir el menú saltaba al conmutador de tema y se
+    dejaba el cajón entero atrás. No es una trampa de foco —se puede tabular
+    fuera—, solo el punto de entrada.
+  */
+  useEffect(() => {
+    if (!open) return;
+    cerrador.current?.focus();
+    const alPulsar = (e: KeyboardEvent) => {
+      if (e.key === "Escape") cerrar();
+    };
+    document.addEventListener("keydown", alPulsar);
+    return () => document.removeEventListener("keydown", alPulsar);
+  }, [open, cerrar]);
 
   return (
     <div className="flex min-h-dvh">
       {open && (
         <div
           className="fixed inset-0 z-[var(--z-backdrop)] bg-black/55 lg:hidden"
-          onClick={close}
+          onClick={cerrar}
           aria-hidden
         />
       )}
@@ -44,7 +98,19 @@ export function Shell({
         orden del CSS generado, no por el orden en el atributo class.
       */}
       <aside
+        ref={cajon}
         data-open={open}
+        /*
+          Cerrado, el cajón se aparta con `translate`, que es puramente visual:
+          sus quince enlaces y el botón de salir seguían en el orden de Tab,
+          fuera de la pantalla. `inert` es lo que de verdad los saca del foco y
+          del árbol accesible, y no hace falta añadirle `aria-hidden`, que haría
+          lo mismo dos veces.
+
+          Depende del estado Y del modo: en escritorio el menú es fijo y no
+          puede quedar inerte nunca.
+        */
+        inert={!fijo && !open}
         className="app-nav fixed inset-y-0 left-0 z-[var(--z-drawer)] flex w-60 flex-col border-r"
         style={{
           background: "var(--nav-bg)",
@@ -63,7 +129,7 @@ export function Shell({
           */}
           <Link
             href="/"
-            onClick={close}
+            onClick={cerrar}
             className="flex min-h-11 min-w-0 items-center gap-3 rounded-[var(--r-control)] focus-ring"
           >
             <span
@@ -75,9 +141,16 @@ export function Shell({
               {companyName}
             </span>
           </Link>
+          {/*
+            `size-11` y `shrink-0`. Medía 40x32,5: alto por `size-10`, y ancho
+            porque siendo hijo de un flex sin `shrink-0` cedía sitio al nombre
+            de la empresa. El ícono no cambia de tamaño; crece el área que se
+            toca.
+          */}
           <button
-            onClick={close}
-            className="flex size-10 items-center justify-center rounded-[var(--r-control)] text-white/75 hover:bg-white/10 hover:text-white lg:hidden focus-ring"
+            ref={cerrador}
+            onClick={cerrar}
+            className="flex size-11 shrink-0 items-center justify-center rounded-[var(--r-control)] text-white/75 hover:bg-white/10 hover:text-white lg:hidden focus-ring"
             aria-label="Cerrar menú"
           >
             <X className="size-6" aria-hidden />
@@ -106,7 +179,7 @@ export function Shell({
                       <li key={item.href}>
                         <Link
                           href={item.href}
-                          onClick={close}
+                          onClick={cerrar}
                           aria-current={active ? "page" : undefined}
                           className="flex min-h-11 items-center gap-3 rounded-[var(--r-control)] px-3 py-2.5 font-medium transition-colors focus-ring"
                           style={{
@@ -180,8 +253,9 @@ export function Shell({
         */}
         <header className="sticky top-0 z-[var(--z-sticky)] flex h-16 shrink-0 items-center gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-4 no-print sm:px-6">
           <button
+            ref={abridor}
             onClick={() => setOpen(true)}
-            className="flex size-11 items-center justify-center rounded-[var(--r-control)] text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] lg:hidden focus-ring"
+            className="flex size-11 shrink-0 items-center justify-center rounded-[var(--r-control)] text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] lg:hidden focus-ring"
             aria-label="Abrir menú"
           >
             <Menu className="size-6" aria-hidden />
