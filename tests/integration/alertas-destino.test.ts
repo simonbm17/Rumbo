@@ -78,4 +78,24 @@ describe("a dónde lleva cada alerta", () => {
     // Y ninguna arrastra ya el parámetro muerto.
     for (const a of alertas) expect(a.href).not.toContain("?tab=");
   });
+
+  /*
+    El ancla se añade DESPUÉS del id, nunca dentro. Varias pantallas sacan a
+    qué vehículo o conductor pertenece una alerta leyendo su destino, y cuando
+    los `?tab=` pasaron a anclas una de ellas capturó «id#documentos» y dejó de
+    reconocer a nadie. Esto fija la forma que esas pantallas dan por supuesta.
+  */
+  it("deja el id como un segmento limpio, con el ancla después", async () => {
+    const vehiculo = await crearVehiculo({ plate: "ALT-002" });
+    await db.document.create({
+      data: { truckId: vehiculo.id, type: "SOAT", expiresAt: enDias(4) },
+    });
+
+    for (const a of await getAlerts()) {
+      const [, tipo, id] = a.href.split("/");
+      expect(["camiones", "conductores"]).toContain(tipo);
+      expect(id.split("#")[0]).not.toContain("#");
+      expect(a.href.split("#")[0]).toBe(`/${tipo}/${id.split("#")[0]}`);
+    }
+  });
 });

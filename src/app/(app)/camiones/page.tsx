@@ -93,13 +93,25 @@ export default async function VehiclesPage({
   */
   const alertaPorVehiculo = new Map<string, { texto: string; urgente: boolean }>();
   for (const a of alertas) {
-    const m = a.href.match(/^\/camiones\/([^/?]+)/);
+    /*
+      `#` va en la clase negada. Los destinos de alerta pasaron de
+      `?tab=documentos` a `#documentos`, y sin excluir la almohadilla el id
+      capturado salía como «cmt…#documentos»: no coincidía con ningún vehículo
+      y las tarjetas se quedaban sin su aviso, en silencio.
+    */
+    const m = a.href.match(/^\/camiones\/([^/?#]+)/);
     if (!m) continue;
     const id = m[1];
     if (alertaPorVehiculo.has(id)) continue; // getAlerts ya viene por urgencia
     alertaPorVehiculo.set(id, {
       texto: `${a.title.split(" — ")[0]} ${relativeDays(a.days)}`,
-      urgente: a.level !== "warning",
+      /*
+        Los dos niveles que no admiten espera, nombrados. Antes era
+        `level !== "warning"`, que no dice qué es urgente sino qué no lo es: si
+        `alerts.ts` añadiera mañana un nivel informativo, entraría acá solo por
+        no llamarse «warning».
+      */
+      urgente: a.level === "expired" || a.level === "critical",
     });
   }
 
