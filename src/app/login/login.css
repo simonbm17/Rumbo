@@ -1,0 +1,589 @@
+/*
+  SISTEMA VISUAL DEL ACCESO.
+
+  Todo cuelga de `.lg` y este archivo lo importa solo `src/app/login/page.tsx`.
+  Ni el sistema de la aplicación interna (`globals.css`) ni el de la portada
+  (`landing.css`) se tocan: el primero es de otra superficie y el segundo está
+  congelado.
+
+  ── POR QUÉ SE REPITEN LOS COLORES ──────────────────────────────────────────
+
+  El azul marino, los dos naranjas y los tres blancos son literalmente los
+  mismos valores que la portada. No se importan porque `landing.css` los declara
+  dentro de `.lp` y ese archivo no se modifica en esta fase. Queda anotado como
+  deuda: los tokens públicos de marca deberían vivir en un archivo compartido
+  del que bebieran portada y acceso. Duplicarlos acotado a una ruta y con el
+  motivo escrito es preferible a tocar una superficie ya cerrada.
+
+  ── QUÉ REGISTRO ES ÉSTE ────────────────────────────────────────────────────
+
+  El acceso es DOS cosas a la vez y por eso tiene dos reglas distintas:
+
+    el panel de marca   es superficie de marca: puede respirar, tener escala
+                        fluida y una entrada tranquila;
+    el formulario       es interfaz de producto: escala fija, una sola familia,
+                        cero coreografía. Quien llega acá viene a entrar.
+
+  Eso explica que el formulario NO se anime. Ver el bloque de movimiento.
+*/
+
+.lg {
+  --navy: #071f4b;
+  --naranja: #ff5a00;
+  --naranja-texto: #c74400;
+  --naranja-hover: #a83900;
+  --tinta: #0b1730;
+  --gris: #55647d;
+  --linea: #e2e7ef;
+  --blanco: #ffffff;
+  --frio: #f8fafc;
+
+  /*
+    Texto sobre marino, en colores SÓLIDOS y no blancos con alfa: sobre una
+    superficie con luz, el alfa da un contraste distinto en cada punto y deja de
+    poder auditarse. Calculados contra el punto más claro del panel.
+  */
+  --sobre-navy-1: #ffffff;
+  --sobre-navy-2: #c9d5ea;
+  --sobre-navy-3: #a3b4d2;
+
+  --r-1: 6px;
+  --r-2: 10px;
+
+  /*
+    Movimiento de producto: 150-250ms. La única excepción es la entrada del
+    panel de marca, que es superficie de marca y sí puede tomarse su tiempo.
+  */
+  --m-ui: 200ms;
+  --m-marca: 620ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  min-height: 100dvh;
+  background: var(--blanco);
+  color: var(--tinta);
+}
+
+/* =========================================================== estructura == */
+
+/*
+  Apilado por defecto: franja de marca arriba, acceso debajo. En teléfono lo que
+  importa es que el formulario aparezca pronto, no recorrer 700px de arte.
+  A partir de 1024 pasa a dos columnas.
+
+  46/54 y no 50/50: el formulario mide 400px y necesita márgenes generosos a los
+  lados para no leerse apretado; el panel de marca no necesita tanto porque su
+  contenido es corto. La proporción sale de lo que va dentro, no de partir la
+  pantalla por la mitad.
+*/
+.lg-reja {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100dvh;
+}
+@media (min-width: 1024px) {
+  .lg-reja {
+    grid-template-rows: none;
+    grid-template-columns: minmax(0, 46%) minmax(0, 1fr);
+  }
+}
+
+/* ============================================================== marca ==== */
+
+.lg-marca {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  background: var(--navy);
+  color: var(--sobre-navy-1);
+  padding: 1.5rem 1.25rem 1.75rem;
+}
+@media (min-width: 640px) {
+  .lg-marca {
+    padding: 2rem 2.5rem 2.25rem;
+  }
+}
+@media (min-width: 1024px) {
+  .lg-marca {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 3rem;
+  }
+}
+
+/*
+  LA LUZ, EN DOS PUNTOS.
+
+  Mismo material que la franja de producto de la portada: azul entrando por
+  arriba a la izquierda, naranja saliendo por abajo a la derecha, y entre medias
+  nada. Un resplandor repartido aplana; lo que da volumen es que la luz llegue
+  desde un sitio concreto. Es CSS, no una imagen: el acceso no descarga la
+  textura de 38KB que sí usa la portada.
+*/
+.lg-luz {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  /*
+    El foco azul al 30% y decayendo antes, no al 50%.
+
+    Medido sobre los píxeles del render: con 0,5 la luz subía el marino a
+    rgb(19,57,116) justo donde va el rótulo, y el naranja de marca sobre ese
+    color da 3,60:1 — por debajo del 4,5 que necesita un texto de 14px. Con
+    estos valores el fondo bajo el rótulo no pasa de ~rgb(11,40,89) y el mismo
+    naranja vuelve a 4,6:1. La luz sigue estando; deja de comerse el texto.
+  */
+  background:
+    radial-gradient(
+      58% 44% at 4% 4%,
+      rgb(41 108 196 / 0.3) 0%,
+      rgb(41 108 196 / 0) 62%
+    ),
+    radial-gradient(
+      58% 46% at 100% 100%,
+      rgb(255 90 0 / 0.24) 0%,
+      rgb(255 90 0 / 0) 70%
+    );
+}
+
+/*
+  EL VEHÍCULO, RECORTADO POR EL MARCO.
+
+  No es el hero. Ahí el camión entero es el protagonista y aterriza sobre la
+  sección siguiente; acá asoma por la esquina, cortado por el canto del panel, y
+  se queda quieto. Es presencia, no escena.
+
+  Al 82% de opacidad: a plena carga el blanco de la carrocería sobre marino grita
+  más que el formulario, y el formulario es lo que la persona vino a usar.
+*/
+.lg-camion {
+  position: absolute;
+  z-index: 1;
+  height: auto;
+  opacity: 0.82;
+  pointer-events: none;
+}
+@media (max-width: 1023px) {
+  /* En franja horizontal entra por la derecha, donde no hay texto. */
+  .lg-camion {
+    right: -14%;
+    bottom: -34%;
+    width: 62%;
+  }
+}
+@media (min-width: 1024px) {
+  /* En columna cae a la esquina inferior izquierda y se sale por dos cantos. */
+  .lg-camion {
+    left: -16%;
+    bottom: -7%;
+    width: 92%;
+  }
+}
+
+/*
+  EL VELO. El vehículo tiene que EMERGER del marino, no estar pegado encima.
+
+  Sin esto pasaba lo que se ve en la captura de Chrome: la línea de copyright
+  caía sobre la carrocería blanca y quedaba ilegible, y en franja el titular
+  llegaba a rozar la cabina. Mi auditoría de contraste no lo detectaba porque
+  camina el árbol hasta el primer fondo opaco y no sabe que hay una imagen
+  pintada encima; se descubrió midiendo píxeles del render.
+
+  En columna el velo sube desde abajo, que es donde está el aviso legal. En
+  franja entra desde la izquierda, que es donde está el texto.
+*/
+.lg-marca::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+@media (max-width: 1023px) {
+  .lg-marca::after {
+    background: linear-gradient(
+      to right,
+      var(--navy) 0%,
+      rgb(7 31 75 / 0.82) 42%,
+      rgb(7 31 75 / 0) 68%
+    );
+  }
+}
+@media (min-width: 1024px) {
+  .lg-marca::after {
+    background: linear-gradient(
+      to top,
+      var(--navy) 0%,
+      rgb(7 31 75 / 0.86) 9%,
+      rgb(7 31 75 / 0) 26%
+    );
+  }
+}
+
+.lg-marca-cuerpo {
+  position: relative;
+  z-index: 2;
+}
+
+.lg-eyebrow {
+  font-family: var(--font-mono-family), ui-monospace, monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  /*
+    El naranja de MARCA, no el de texto: medido, #ff5a00 sobre #071f4b da
+    5,14:1 y #c74400 solo 3,26:1. El naranja oscuro existe para el blanco.
+  */
+  color: var(--naranja);
+}
+
+.lg-display {
+  margin-top: 0.75rem;
+  font-family: var(--lg-display), "Arial Narrow", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(2rem, 4.4vw, 3.5rem);
+  line-height: 0.94;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--sobre-navy-1);
+}
+
+.lg-lead {
+  margin-top: 1rem;
+  max-width: 34ch;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--sobre-navy-2);
+}
+@media (max-width: 1023px) {
+  /* En franja el texto largo compite con el formulario: se queda el titular. */
+  .lg-lead {
+    display: none;
+  }
+}
+
+.lg-marca-pie {
+  position: relative;
+  z-index: 2;
+  display: none;
+  font-size: 0.9375rem;
+  color: var(--sobre-navy-3);
+}
+@media (min-width: 1024px) {
+  .lg-marca-pie {
+    display: block;
+  }
+}
+
+/* Enlace del logotipo: vuelve al sitio, y se ve que se puede tocar. */
+.lg-marca a:focus-visible,
+.lg-acceso a:focus-visible,
+.lg button:focus-visible {
+  outline: 3px solid var(--naranja);
+  outline-offset: 3px;
+  border-radius: var(--r-1);
+}
+.lg-marca a:focus-visible {
+  outline-color: #ffffff;
+}
+
+/* ============================================================= acceso ==== */
+
+.lg-acceso {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: 1.25rem;
+}
+@media (min-width: 640px) {
+  .lg-acceso {
+    padding: 1.5rem 2rem 2rem;
+  }
+}
+@media (min-width: 1024px) {
+  .lg-acceso {
+    padding: 2rem 3rem 2.5rem;
+  }
+}
+
+/*
+  400px de columna, no 700.
+
+  Un campo de correo de 700px de ancho obliga a barrer la pantalla entera para
+  leer una etiqueta de dos palabras, y hace que el formulario parezca un
+  documento. 400 es donde una etiqueta, su campo y su error se abarcan de una
+  mirada.
+*/
+.lg-formulario {
+  width: 100%;
+  max-width: 400px;
+  justify-self: center;
+  padding-block: 2rem;
+  /*
+    Apilado, el formulario se ancla ARRIBA, no se centra.
+
+    Centrado verticalmente en el hueco que queda bajo la franja, a 768x1024 el
+    titular caía en Y 470: 180px de blanco entre la franja de marca y el primer
+    campo, en la pantalla donde más importa llegar pronto al formulario. Anclado
+    arriba empieza cerca de 350.
+  */
+  align-self: start;
+}
+@media (min-width: 1024px) {
+  /* En dos columnas sí se centra: ahí la columna es solo del formulario. */
+  .lg-formulario {
+    align-self: center;
+  }
+}
+
+.lg-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  align-self: start;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--gris);
+  transition: color var(--m-ui) ease;
+}
+.lg-volver svg {
+  transition: transform var(--m-ui) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .lg-volver:hover {
+    color: var(--tinta);
+  }
+  .lg-volver:hover svg {
+    transform: translateX(-3px);
+  }
+}
+
+.lg-titulo {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  color: var(--tinta);
+}
+.lg-sub {
+  margin-top: 0.375rem;
+  font-size: 1rem;
+  color: var(--gris);
+}
+
+.lg-legal {
+  align-self: end;
+  font-size: 0.875rem;
+  color: var(--gris);
+}
+@media (min-width: 1024px) {
+  /* En dos columnas el aviso legal ya vive en el panel de marca. */
+  .lg-legal {
+    display: none;
+  }
+}
+
+/* =========================================================== campos ====== */
+
+/*
+  Los campos son los primitivos compartidos (`components/ui/Field`), sin tocar:
+  esta hoja solo los reviste dentro de `.lg`. Así el contrato de nombres del
+  formulario y su semántica siguen siendo los mismos que en toda la aplicación.
+
+  Seis estados, no tres. Un control que solo tiene «normal» y «con foco» obliga
+  a adivinar si está deshabilitado, si tiene algo escrito o si algo falló.
+*/
+.lg .input-base {
+  min-height: 52px;
+  padding: 0.75rem 0.875rem;
+  background: var(--blanco);
+  border: 1.5px solid var(--linea);
+  border-radius: var(--r-2);
+  font-size: 1rem;
+  color: var(--tinta);
+  transition:
+    border-color var(--m-ui) ease,
+    box-shadow var(--m-ui) ease,
+    background-color var(--m-ui) ease;
+}
+.lg .input-base::placeholder {
+  color: #7a8799;
+}
+@media (hover: hover) and (pointer: fine) {
+  .lg .input-base:hover:not(:disabled):not(:focus) {
+    border-color: #cbd4e2;
+  }
+}
+.lg .input-base:focus,
+.lg .input-base:focus-visible {
+  outline: none;
+  border-color: var(--naranja-texto);
+  box-shadow: 0 0 0 3px rgb(199 68 0 / 0.16);
+}
+.lg .input-base:disabled {
+  background: var(--frio);
+  color: var(--gris);
+  cursor: not-allowed;
+}
+
+/*
+  RELLENO AUTOMÁTICO DE CHROME.
+
+  Chrome pinta un amarillo propio en los campos que autocompleta y se lo salta
+  todo salvo esto: no se puede cambiar con `background`, hay que empujar el
+  color con una sombra interior enorme. Sin esto, un campo autocompletado queda
+  amarillo con texto gris y deja de cumplir contraste justo en el caso más
+  común, que es volver a entrar.
+*/
+.lg .input-base:-webkit-autofill,
+.lg .input-base:-webkit-autofill:hover,
+.lg .input-base:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--tinta);
+  -webkit-box-shadow: 0 0 0 1000px var(--blanco) inset;
+  box-shadow: 0 0 0 1000px var(--blanco) inset;
+  caret-color: var(--tinta);
+}
+.lg .input-base:-webkit-autofill:focus {
+  -webkit-box-shadow:
+    0 0 0 1000px var(--blanco) inset,
+    0 0 0 3px rgb(199 68 0 / 0.16);
+  box-shadow:
+    0 0 0 1000px var(--blanco) inset,
+    0 0 0 3px rgb(199 68 0 / 0.16);
+}
+
+/* Etiqueta siempre visible. Un marcador de posición no es una etiqueta: */
+/* desaparece justo cuando hay algo escrito, que es cuando hace falta. */
+.lg label {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+/* Mostrar u ocultar la contraseña. 44x44 reales, no un icono suelto. */
+.lg-ojo {
+  position: absolute;
+  inset-block: 0;
+  right: 0;
+  display: flex;
+  width: 52px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-2);
+  color: var(--gris);
+  transition:
+    color var(--m-ui) ease,
+    transform 140ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .lg-ojo:hover {
+    color: var(--tinta);
+  }
+}
+.lg-ojo:active {
+  transform: scale(0.94);
+}
+
+/* =========================================================== botón ======= */
+
+.lg-btn {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  min-height: 52px;
+  padding-inline: 1.5rem;
+  border-radius: var(--r-2);
+  background: var(--naranja-texto);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  transition:
+    background-color var(--m-ui) ease,
+    transform 140ms var(--ease-out);
+}
+.lg-btn svg {
+  transition: transform var(--m-ui) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .lg-btn:hover:not(:disabled) {
+    background: var(--naranja-hover);
+    transform: translateY(-1px);
+  }
+  .lg-btn:hover:not(:disabled) svg {
+    transform: translateX(3px);
+  }
+}
+/* El pulsado va DESPUÉS del hover: con la misma especificidad gana el último, */
+/* y al pulsar con ratón el botón también está en hover. */
+.lg-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.975);
+}
+.lg-btn:disabled {
+  background: #8f7565;
+  cursor: progress;
+  transform: none;
+}
+
+/* ========================================================= movimiento ==== */
+
+/*
+  EL FORMULARIO NO SE ANIMA, Y ES DELIBERADO.
+
+  La superficie de marca sí: aparece con un desvanecido tranquilo, una sola vez,
+  porque es lo que la persona mira mientras la página termina de cargar.
+
+  El formulario no. Quien abre `/login` viene a escribir, y el primer campo
+  recibe el foco al cargar: animarlo significaría que el anillo de foco aparece
+  sobre algo que todavía se está desvaneciendo, y que durante medio segundo la
+  persona escribe sobre un elemento en movimiento. Un formulario que se hace
+  esperar no es elegante, es lento.
+*/
+@keyframes lg-entra {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes lg-asoma {
+  from {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+  to {
+    opacity: 0.82;
+    transform: none;
+  }
+}
+
+.lg [data-paso] {
+  animation: lg-entra var(--m-marca) var(--ease-out) both;
+  animation-delay: var(--paso, 0ms);
+}
+.lg .lg-camion[data-paso] {
+  animation-name: lg-asoma;
+  animation-duration: 700ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lg [data-paso] {
+    animation: none !important;
+    transform: none !important;
+  }
+  .lg .lg-camion[data-paso] {
+    opacity: 0.82;
+  }
+  .lg *,
+  .lg *::before,
+  .lg *::after {
+    transition-duration: 110ms !important;
+    transition-timing-function: linear !important;
+  }
+}

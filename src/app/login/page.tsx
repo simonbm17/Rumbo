@@ -1,17 +1,41 @@
+import Image from "next/image";
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Bell, Truck, Wallet } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { getSession } from "@/lib/auth";
 import { getCompanySettings } from "@/lib/settings";
+import { Logo } from "@/components/landing/Logo";
 import { LoginForm } from "./LoginForm";
+import { displayAcceso } from "./fuente";
+
+import "./login.css";
 
 export const metadata = { title: "Ingresar" };
 
-const PUNTOS = [
-  { icon: Truck, texto: "Todos tus camiones con su foto y su placa" },
-  { icon: Bell, texto: "Aviso antes de que se venza un documento" },
-  { icon: Wallet, texto: "Cuánto deja cada camión y cada viaje" },
-];
-
+/**
+ * ACCESO.
+ *
+ * Comparte el ADN de la portada —blanco, azul marino, naranja, la condensada de
+ * marca— pero no la copia. La portada presenta y se mueve; acá la persona viene
+ * a entrar, así que la pantalla está más quieta y el formulario manda.
+ *
+ * ── LO QUE SE MUESTRA Y LO QUE NO ───────────────────────────────────────────
+ *
+ * Solo hay correo y contraseña porque solo hay correo y contraseña. Rumbo no
+ * tiene SSO, ni Google, ni Microsoft, ni enlace mágico, ni segundo factor, ni
+ * registro público, ni recuperación de contraseña: buscado en el repositorio,
+ * cero implementaciones. Dibujar cualquiera de esos botones sería prometer una
+ * puerta que no existe.
+ *
+ * Tampoco hay sellos de seguridad. «Cifrado de nivel bancario» y compañía son
+ * afirmaciones que nadie acreditó.
+ *
+ * ── LO QUE NO SE TOCA ───────────────────────────────────────────────────────
+ *
+ * Nada de autenticación. La misma `loginAction`, la misma sesión, la misma
+ * limitación de intentos, el mismo redirigido a `/panel`, el mismo guardia que
+ * manda acá a quien no tiene sesión. Esta fase es presentación.
+ */
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const session = await getSession();
   if (session) redirect("/panel");
@@ -19,82 +43,103 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const params = await searchParams;
   const notice =
     params.error === "inactivo"
-      ? "Tu sesión ya no es válida. Ingresá de nuevo."
+      ? "Tu sesión ya no es válida. Ingresa de nuevo."
       : null;
 
   const company = await getCompanySettings();
+  const anio = new Date().getFullYear();
 
   return (
-    <div className="grid min-h-dvh lg:grid-cols-[1fr_1.1fr]">
-      {/*
-        Panel de marca en color plano. Antes tenía una mancha difuminada de
-        degradado que no aportaba nada y es el adorno típico de plantilla.
-      */}
-      <div
-        className="hidden flex-col justify-between p-12 lg:flex"
-        style={{ background: "var(--nav-bg)" }}
-      >
-        <div className="flex items-center gap-3">
-          <span
-            className="flex size-11 items-center justify-center rounded-xl text-white"
-            style={{ background: "var(--nav-active)" }}
-          >
-            <Truck className="size-6" aria-hidden />
-          </span>
-          <span className="text-xl font-semibold text-white">Rumbo</span>
-        </div>
+    <div className={`lg ${displayAcceso.variable}`}>
+      <div className="lg-reja">
+        {/* ---------------------------- marca ---------------------- */}
+        <section className="lg-marca" aria-label="Rumbo">
+          <div className="lg-luz" aria-hidden />
 
-        <div className="max-w-md">
-          <p className="text-3xl font-semibold leading-tight text-white text-balance">
-            Toda tu flota, en una sola pantalla.
-          </p>
-          <ul className="mt-8 flex flex-col gap-4">
-            {PUNTOS.map(({ icon: Icon, texto }) => (
-              <li key={texto} className="flex items-start gap-3">
-                <Icon
-                  className="mt-0.5 size-5 shrink-0"
-                  style={{ color: "var(--nav-text)" }}
-                  aria-hidden
-                />
-                <span
-                  className="text-lg"
-                  style={{ color: "var(--nav-text)" }}
-                >
-                  {texto}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+          {/*
+            El vehículo oficial, recortado por el canto del panel. No se
+            reemplaza, no se espeja y no se deforma: solo se encuadra distinto
+            que en la portada, donde va entero.
+          */}
+          <Image
+            src="/landing/camion.webp"
+            alt=""
+            aria-hidden
+            width={1400}
+            height={872}
+            priority
+            sizes="(max-width: 1023px) 62vw, 44vw"
+            className="lg-camion"
+            data-paso="camion"
+            style={{ "--paso": "160ms" } as React.CSSProperties}
+          />
 
-        <p className="text-sm" style={{ color: "var(--nav-text)" }}>
-          © {new Date().getFullYear()} {company.name}
-        </p>
-      </div>
-
-      <div className="flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md">
-          <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <span
-              className="flex size-11 items-center justify-center rounded-xl text-white"
-              style={{ background: "var(--brand)" }}
+          <div className="lg-marca-cuerpo">
+            {/*
+              El logotipo oficial, y enlazado a la portada: quien llega acá por
+              error tiene una salida evidente sin buscarla.
+            */}
+            <Link
+              href="/"
+              aria-label="Rumbo, ir al inicio"
+              className="inline-flex min-h-11 items-center"
+              data-paso="logo"
+              style={{ "--paso": "40ms" } as React.CSSProperties}
             >
-              <Truck className="size-6" aria-hidden />
-            </span>
-            <span className="text-xl font-semibold">Rumbo</span>
+              <Logo variante="blanco" alto={30} prioridad />
+            </Link>
+
+            <p
+              className="lg-eyebrow mt-8"
+              data-paso="rotulo"
+              style={{ "--paso": "120ms" } as React.CSSProperties}
+            >
+              Gestión de flotas
+            </p>
+            <p
+              className="lg-display"
+              data-paso="titular"
+              style={{ "--paso": "180ms" } as React.CSSProperties}
+            >
+              Tu operación
+              <br />
+              empieza aquí.
+            </p>
+            <p
+              className="lg-lead"
+              data-paso="lead"
+              style={{ "--paso": "260ms" } as React.CSSProperties}
+            >
+              Accede a Rumbo para gestionar vehículos, conductores, viajes,
+              mantenimientos, documentos y alertas.
+            </p>
           </div>
 
-          <h1 className="text-2xl font-semibold tracking-tight text-balance">
-            Ingresá a tu cuenta
-          </h1>
-          <p className="mt-2 text-lg text-[var(--text-muted)]">
-            {company.name}
+          <p className="lg-marca-pie">
+            © {anio} {company.name}
           </p>
+        </section>
 
-          <div className="mt-8">
-            <LoginForm notice={notice} />
+        {/* --------------------------- acceso ---------------------- */}
+        <main className="lg-acceso">
+          <Link href="/" className="lg-volver">
+            <ArrowLeft className="size-4" aria-hidden />
+            Volver a Rumbo
+          </Link>
+
+          <div className="lg-formulario">
+            <h1 className="lg-titulo">Ingresa a tu cuenta</h1>
+            <p className="lg-sub">{company.name}</p>
+
+            <div className="mt-8">
+              <LoginForm notice={notice} />
+            </div>
           </div>
-        </div>
+
+          <p className="lg-legal">
+            © {anio} {company.name}
+          </p>
+        </main>
       </div>
     </div>
   );

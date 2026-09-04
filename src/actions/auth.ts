@@ -37,7 +37,7 @@ export async function loginAction(
   const password = String(formData.get("password") ?? "");
 
   if (!email || !password) {
-    return { error: "Ingresá tu correo y contraseña." };
+    return { error: "Ingresa tu correo y contraseña." };
   }
 
   // Se cuenta por correo y por origen: así ni se puede machacar una cuenta
@@ -52,7 +52,7 @@ export async function loginAction(
       porOrigen.esperaSegundos
     );
     return {
-      error: `Demasiados intentos fallidos. Esperá ${formatearEspera(espera)} antes de volver a probar.`,
+      error: `Demasiados intentos fallidos. Espera ${formatearEspera(espera)} antes de volver a probar.`,
     };
   }
 
@@ -71,7 +71,7 @@ export async function loginAction(
   if (!valida) return invalido;
 
   if (!user.active) {
-    return { error: "Tu cuenta está desactivada. Contactá al administrador." };
+    return { error: "Tu cuenta está desactivada. Contacta al administrador." };
   }
 
   // Acertó: se le devuelve el cupo completo de intentos.
