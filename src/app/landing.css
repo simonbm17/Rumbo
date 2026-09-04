@@ -1,0 +1,1497 @@
+/*
+  SISTEMA VISUAL PÚBLICO DE RUMBO. V4.
+
+  Todo cuelga de `.lp` y este archivo lo importa solo `src/app/page.tsx`. Los
+  tokens del producto interno NO se tocan: la aplicación sigue con su tinta, su
+  petróleo y sus cuatro familias semánticas. La portada tiene otro trabajo
+  —presentar— y por eso otro sistema, encapsulado acá.
+
+  ── QUÉ CAMBIA EN V4 ────────────────────────────────────────────────────────
+
+  V3 era correcta. Correcta no es reconocible. Tres decisiones cambian eso:
+
+  1. LA LETRA. Big Shoulders en vez de Archivo Narrow. Ver `fuente.ts`.
+  2. EL ESCENARIO. La pieza de producto deja de ser una tarjeta oscura flotando
+     en blanco y pasa a ser una franja a sangre completa: fondo, luz y consola
+     en tres planos distintos. Profundidad por capas, no por inclinar un panel.
+  3. LA LLEGADA. El camión del hero desborda hacia abajo y aterriza SOBRE esa
+     franja. Hero y producto dejan de ser dos secciones apiladas y pasan a ser
+     una sola escena. Es lo que hace que la página no se pueda copiar cambiando
+     el logotipo.
+
+  Reparto de color: ~65% blanco y grises fríos, ~25% azul marino, ~10% naranja.
+  El naranja es señal —llamada a la acción, énfasis, grafismo de marca—, nunca
+  superficie general.
+*/
+
+.lp {
+  /* ------------------------------------------------------------ color -- */
+  --navy: #071f4b;
+  --navy-2: #08265a;
+  --navy-3: #0c3272;
+  --azul: #1f5ba8;
+
+  /*
+    Dos naranjas, y la razón.
+
+    `--naranja` es el color de marca y vive en superficies y grafismo: el arco,
+    los iconos, la franja de cierre, las barras. `--naranja-texto` es para TEXTO
+    sobre blanco y para fondos con texto blanco encima: medido, #ff5a00 sobre
+    blanco da 3,13:1 y no llega a AA para cuerpo. #c74400 da 4,94:1 y sigue
+    siendo el mismo naranja a simple vista.
+  */
+  --naranja: #ff5a00;
+  --naranja-texto: #c74400;
+
+  --tinta: #0b1730;
+  --gris: #55647d;
+  --gris-2: #7a8799;
+  --linea: #e2e7ef;
+
+  /*
+    Tres blancos, no uno.
+
+    Una portada entera a #ffffff plano se aplana: sin cambio de superficie, el
+    lector no percibe dónde termina un tema y empieza otro. Estos tres se
+    alternan sección a sección y ninguno se nota por sí mismo.
+  */
+  --blanco: #ffffff;
+  --frio-1: #f8fafc;
+  --frio-2: #f3f6fa;
+
+  /*
+    Texto sobre azul marino, en colores SÓLIDOS.
+
+    Antes eran blancos con alfa (`text-white/70`). Sobre un degradado el alfa da
+    un contraste distinto en cada punto de la superficie, así que no se puede
+    auditar: medido, ni siquiera se puede leer el color efectivo. Estos tres
+    están calculados contra el tono más claro del degradado (#0c3272), que es el
+    caso peor: 12,25:1 / 8,27:1 / 5,84:1.
+  */
+  --sobre-navy-1: #ffffff;
+  --sobre-navy-2: #c9d5ea;
+  --sobre-navy-3: #a3b4d2;
+
+  /* -------------------------------------------------------- espaciado -- */
+  /*
+    Escala de 8, sin valores sueltos. Antes convivían 18, 34, 52 y 96px sin
+    criterio; una retícula sin números propios se nota aunque nadie sepa
+    nombrarlo.
+  */
+  --e-1: 0.5rem; /* 8  */
+  --e-2: 0.75rem; /* 12 */
+  --e-3: 1rem; /* 16 */
+  --e-4: 1.5rem; /* 24 */
+  --e-5: 2rem; /* 32 */
+  --e-6: 3rem; /* 48 */
+  --e-7: 4rem; /* 64 */
+  --e-8: 6rem; /* 96 */
+  --e-9: 8rem; /* 128 */
+
+  /* Aire vertical de sección, fluido pero dentro de la escala. */
+  --seccion: clamp(var(--e-7), 9vw, var(--e-9));
+
+  /* ----------------------------------------------------------- radios -- */
+  /*
+      r-1  controles, etiquetas y placas
+      r-2  botones
+      r-3  superficies interiores de la consola
+      r-4  la consola y solo ella
+  */
+  --r-1: 6px;
+  --r-2: 10px;
+  --r-3: 16px;
+  --r-4: 24px;
+
+  /* --------------------------------------------------------- sombras --- */
+  /*
+    Cuatro sombras con nombre y con oficio. Ninguna es negra pura: todas van
+    teñidas del azul del fondo, que es de donde vendría la luz.
+  */
+  --s-ui: 0 1px 2px rgb(11 23 48 / 0.06), 0 8px 24px -16px rgb(11 23 48 / 0.28);
+  --s-producto: 0 40px 90px -40px rgb(3 10 28 / 0.72),
+    0 8px 24px -16px rgb(3 10 28 / 0.5);
+  --s-camion: 0 30px 60px -34px rgb(11 23 48 / 0.45);
+  --s-brillo: 0 0 0 1px rgb(255 255 255 / 0.06) inset;
+
+  /* -------------------------------------------------------- movimiento */
+  /*
+    CUATRO duraciones y DOS curvas. En V3 había ocho valores distintos, que es
+    lo mismo que no tener sistema: dos cosas que hacen lo mismo tardaban
+    distinto y la página se sentía irregular sin que se supiera por qué.
+
+      micro    respuesta al dedo: pulsar, soltar
+      ui       cambio de estado visible: hover, foco, cabecera
+      seccion  entrada de un bloque al aparecer
+      hero     la secuencia de apertura, y nada más
+  */
+  --m-micro: 160ms;
+  --m-ui: 220ms;
+  --m-seccion: 620ms;
+  --m-hero: 850ms;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-soft: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ----------------------------------------------------------- capas --- */
+  --z-fondo: 0;
+  --z-medio: 1;
+  --z-frente: 2;
+  --z-cabecera: 40;
+
+  /*
+    Cuánto desborda el camión del hero sobre el escenario azul. El mínimo es
+    3rem y no 2: con 2rem el relleno inferior del hero se comía casi todo el
+    solape y quedaban 8px, que no se leen como aterrizaje sino como corte.
+  */
+  --asoma: clamp(3rem, 6vw, 7rem);
+
+  background: var(--blanco);
+  color: var(--tinta);
+  overflow-x: clip;
+}
+
+/* --------------------------------------------------------------- ritmo --- */
+
+.lp-ancho {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: var(--e-3);
+}
+@media (min-width: 480px) {
+  .lp-ancho {
+    padding-inline: var(--e-4);
+  }
+}
+@media (min-width: 768px) {
+  .lp-ancho {
+    padding-inline: var(--e-6);
+  }
+}
+@media (min-width: 1280px) {
+  .lp-ancho {
+    padding-inline: var(--e-7);
+  }
+}
+
+/* ---------------------------------------------------------- tipografía --- */
+
+/*
+  El display SOLO para h1, h2 y las líneas grandes. En cuerpo y en h3 manda
+  IBM Plex Sans: una condensada de señalización a 17px deja de ser carácter y
+  pasa a ser esfuerzo, y esta portada la lee gente que no quiere esforzarse.
+*/
+.lp-h1 {
+  font-family: var(--lp-display), "Arial Narrow", system-ui, sans-serif;
+  font-weight: 700;
+  /*
+    6,8vw y no 6,5. Medido, con 6,5vw el titular caía en 49px a 768 y el encargo
+    pide 50-62 en esa banda. Con 6,8 la escala queda 42 / 52 / 70 / 87 / 98 y
+    tope en 108, que entra en todos los tramos pedidos sin deformar la letra con
+    `scaleX`.
+  */
+  font-size: clamp(2.625rem, 6.8vw, 6.75rem);
+  line-height: 0.9;
+  /*
+    -0.02em y no menos. Big Shoulders ya viene condensada; apretarla además
+    junta las astas y lo que se lee es descuido, no diseño.
+  */
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--navy);
+}
+
+/*
+  Las dos líneas del titular son una decisión de composición, no del navegador,
+  y valen en TODOS los anchos: `text-wrap: balance` repartía «CONTROL TOTAL DE
+  TU FLOTA» en tres líneas parejas y la referencia lo parte en dos.
+
+  Hay además una razón técnica: `next/font` no encuentra métricas de sustitución
+  para Big Shoulders, así que la fuente de respaldo tiene otro ancho. Con el
+  corte fijado, el alto del titular es exactamente dos interlíneas antes y
+  después del intercambio, y no hay desplazamiento de maquetado.
+*/
+.lp-h1 span {
+  display: block;
+}
+
+.lp-h2 {
+  font-family: var(--lp-display), "Arial Narrow", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(2rem, 4.2vw, 3.75rem);
+  line-height: 0.96;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+/* Línea de display en cuerpo de texto: grande, pero no un titular de sección. */
+.lp-display {
+  font-family: var(--lp-display), "Arial Narrow", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.5rem, 2.6vw, 2.25rem);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.lp-h3 {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+}
+
+/*
+  DOS rótulos en toda la página, no cinco.
+
+  El de la cabecera del hero y el de Operación, y los dos son texto que fijó el
+  cliente. El de la sección de cierre dejó de ser rótulo y pasó a ser una línea
+  de display, que es lo que siempre fue: «Dale rumbo a tu operación» es una
+  frase, no una etiqueta de categoría. Un rótulo idéntico encima de cada sección
+  es la retícula que delata una página armada por reflejo.
+*/
+.lp-eyebrow {
+  font-family: var(--font-mono-family), ui-monospace, monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--naranja-texto);
+}
+
+/*
+  Sobre azul marino el rótulo usa el naranja de MARCA, no el de texto: medido,
+  #ff5a00 sobre #071f4b da 5,14:1 y #c74400 solo 3,26:1. El naranja oscuro
+  existe para el blanco, no para el azul.
+*/
+.lp-estadio .lp-eyebrow {
+  color: var(--naranja);
+}
+
+.lp-lead {
+  font-size: clamp(1.0625rem, 1.35vw, 1.1875rem);
+  line-height: 1.6;
+  color: var(--gris);
+}
+
+/*
+  MEDIDA DE LECTURA: 44ch.
+
+  Dos razones y las dos medidas. La primera, de lectura: a 96ch —lo que había en
+  V3— el ojo pierde el renglón al volver. La segunda, de composición: la columna
+  de texto y el escenario comparten media columna de la retícula a propósito, y
+  a 1024 el párrafo llegaba hasta x 497 mientras la carrocería OPACA del vehículo
+  empieza en x 442: la línea más larga acababa sobre la cabina, y en la captura
+  se leían «mantenimiento[s]» y «operación[.]» encima del camión. Con 38ch el
+  texto termina en 436 y no entra en la carrocería en ningún ancho. Por debajo de
+  1024 la columna es más estrecha que 38ch, así que ahí no cambia nada.
+*/
+.lp-lectura {
+  max-width: 38ch;
+}
+
+.lp-cifra {
+  font-family: var(--font-mono-family), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------- placa --- */
+
+.lp-placa {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding-inline: 0.5rem;
+  border: 1px solid currentColor;
+  border-radius: var(--r-1);
+  font-family: var(--font-mono-family), ui-monospace, monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.lp-punto {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex: none;
+}
+
+/* -------------------------------------------------------------- botones -- */
+
+/*
+  En teléfono los dos botones ocupan el ancho entero y miden lo mismo. Con
+  `flex-wrap` cada uno se ajustaba a su texto, caían en dos renglones de anchos
+  distintos y el par se leía como un descuido de maquetado.
+*/
+@media (max-width: 479px) {
+  .lp-hero .lp-btn {
+    width: 100%;
+  }
+}
+
+.lp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e-1);
+  min-height: 52px;
+  padding-inline: var(--e-4);
+  border-radius: var(--r-2);
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color var(--m-ui) ease,
+    color var(--m-ui) ease,
+    border-color var(--m-ui) ease,
+    box-shadow var(--m-ui) ease,
+    transform var(--m-micro) var(--ease-out);
+}
+
+/*
+  La flecha se adelanta al pasar por encima y el botón cede al pulsarlo.
+
+  Son dos gestos distintos y dicen cosas distintas: el desplazamiento de la
+  flecha anuncia hacia dónde lleva, la escala confirma que el clic se registró.
+*/
+.lp-btn svg {
+  transition: transform var(--m-ui) var(--ease-out);
+}
+.lp-btn:focus-visible {
+  outline: 3px solid var(--naranja);
+  outline-offset: 3px;
+}
+
+.lp-btn-naranja {
+  background: var(--naranja-texto);
+  color: #ffffff;
+}
+.lp-btn-linea {
+  border: 1.5px solid var(--linea);
+  background: var(--blanco);
+  color: var(--navy);
+}
+.lp-btn-blanco {
+  background: #ffffff;
+  color: var(--naranja-texto);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lp-btn:hover {
+    transform: translateY(-1px);
+  }
+  .lp-btn:hover svg {
+    transform: translateX(3px);
+  }
+  .lp-btn-naranja:hover {
+    background: #a83900;
+  }
+  .lp-btn-linea:hover {
+    border-color: var(--navy);
+  }
+  .lp-btn-blanco:hover {
+    background: #fff2ea;
+  }
+}
+
+/*
+  EL PULSADO VA DESPUÉS DEL HOVER, Y NO ES CAPRICHO DE ORDEN.
+
+  Estaba declarado antes. Con la misma especificidad (0,2,0) que
+  `.lp-btn:hover`, el que aparece después gana; y al pulsar con ratón el botón
+  también está en hover, así que el `:active` NUNCA llegaba a aplicarse.
+  Verificado en Chrome con eventos de ratón reales: al presionar, el transform
+  seguía siendo `translateY(-1px)`.
+
+  Y el valor combina los dos estados: baja de la posición elevada del hover Y
+  encoge. Un botón que solo encoge, estando ya levantado, se lee como un salto.
+*/
+.lp-btn:active {
+  transform: translateY(0) scale(0.975);
+}
+.lp-enlace:active {
+  transform: scale(0.98);
+}
+
+/*
+  Sobre naranja y sobre azul el anillo naranja desaparece. Se declara también en
+  reposo porque la transición de color animaría el anillo al enfocar.
+*/
+.lp-sobre-color a:focus-visible,
+.lp-sobre-color button:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 3px;
+}
+
+/*
+  Esta hoja se carga DESPUÉS de Tailwind, así que `.lp-enlace { display }`
+  ganaba a `.hidden` por orden de aparición y el enlace de acceso se veía en
+  teléfono, donde debía estar oculto. La visibilidad se declara acá, no con una
+  utilidad que esta misma hoja pisa.
+*/
+.lp .lp-desde-sm {
+  display: none;
+}
+@media (min-width: 640px) {
+  .lp .lp-desde-sm {
+    display: inline-flex;
+  }
+}
+
+.lp-enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-1);
+  min-height: 44px;
+  font-weight: 600;
+  color: var(--navy);
+  transition:
+    color var(--m-ui) ease,
+    transform var(--m-micro) var(--ease-out);
+}
+.lp-enlace svg {
+  transition: transform var(--m-ui) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .lp-enlace:hover {
+    color: var(--naranja-texto);
+  }
+  .lp-enlace:hover svg {
+    transform: translateX(3px);
+  }
+}
+.lp-enlace:focus-visible {
+  outline: 3px solid var(--naranja);
+  outline-offset: 3px;
+  border-radius: var(--r-1);
+}
+
+/* ------------------------------------------------------------ cabecera --- */
+
+/*
+  Estado inicial LIMPIO: sin caja, sin regla, sin sombra. La cabecera solo se
+  materializa cuando hay contenido detrás que separar. Antes de desplazar no hay
+  nada que separar, y una regla ahí es ruido puesto por si acaso.
+
+  El estado desplazado NO usa un oyente de scroll: un centinela de 1px en el
+  tope de la página y un IntersectionObserver marcan `data-desplazado` en el
+  documento. Ver `Reveal.tsx`.
+*/
+.lp-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-cabecera);
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition:
+    background-color var(--m-ui) ease,
+    border-color var(--m-ui) ease,
+    box-shadow var(--m-ui) ease,
+    backdrop-filter var(--m-ui) ease;
+}
+[data-desplazado] .lp-header {
+  background: rgb(255 255 255 / 0.96);
+  backdrop-filter: blur(6px);
+  border-bottom-color: var(--linea);
+  box-shadow: 0 1px 0 0 rgb(11 23 48 / 0.02);
+}
+
+.lp-header-fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-4);
+  height: 72px;
+}
+
+.lp-nav {
+  display: none;
+  align-items: center;
+  gap: var(--e-5);
+}
+@media (min-width: 1024px) {
+  .lp-nav {
+    display: flex;
+  }
+}
+.lp-nav a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--gris);
+  transition: color var(--m-ui) ease;
+}
+
+/*
+  El subrayado crece desde la izquierda, en la dirección de lectura. Un
+  subrayado que aparece entero de golpe no dice de dónde viene; éste sí.
+*/
+.lp-nav a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 18px;
+  height: 2px;
+  width: 100%;
+  background: var(--naranja);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform var(--m-ui) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .lp-nav a:hover {
+    color: var(--navy);
+  }
+  .lp-nav a:hover::after {
+    transform: scaleX(1);
+  }
+}
+.lp-nav a:focus-visible {
+  outline: 3px solid var(--naranja);
+  outline-offset: 3px;
+  border-radius: var(--r-1);
+}
+
+/* ----------------------------------------------------------------- hero -- */
+
+.lp-hero {
+  position: relative;
+  /*
+    Por encima del escenario azul, que viene después en el marcado. Es lo que
+    permite que el camión desborde hacia abajo y se pinte SOBRE el azul en vez
+    de por debajo.
+  */
+  z-index: var(--z-frente);
+  background: var(--blanco);
+  padding-top: var(--e-4);
+  padding-bottom: var(--e-4);
+}
+@media (min-width: 640px) {
+  .lp-hero {
+    padding-top: var(--e-5);
+    padding-bottom: var(--e-6);
+  }
+}
+@media (min-width: 1024px) {
+  .lp-hero {
+    padding-top: var(--e-6);
+    /*
+      Poco aire abajo a propósito: el canto del escenario azul tiene que
+      asomar dentro del primer pliegue. Si el hero mide más que la ventana, la
+      llegada del camión a la consola no se ve nunca y el gesto se pierde.
+    */
+    padding-bottom: var(--e-5);
+  }
+}
+
+.lp-hero-grid {
+  display: grid;
+  gap: var(--e-4);
+}
+/* Apilado, el hueco entre la lectura y el vehículo solo aleja el producto. */
+@media (max-width: 1023px) {
+  .lp-hero-grid {
+    gap: var(--e-2);
+  }
+}
+@media (min-width: 1024px) {
+  .lp-hero-grid {
+    /*
+      Retícula de 12 columnas: lectura en 1-6, escenario en 6-13. La media
+      columna de solape es deliberada: el camión pasa por detrás del texto y la
+      composición deja de leerse como dos cajas puestas una al lado de la otra.
+
+      `grid-row: 1` en los dos NO es decorativo: sin él la colocación
+      automática detecta que las columnas 6 chocan y manda el escenario a una
+      segunda fila. Medido: la lectura acababa en 587 y el camión empezaba
+      exactamente ahí, apilados, que es justo la composición que V4 abandona.
+    */
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    align-items: center;
+    gap: 0;
+  }
+  .lp-hero-lectura {
+    grid-column: 1 / span 6;
+    grid-row: 1;
+    position: relative;
+    z-index: var(--z-frente);
+  }
+  .lp-escenario {
+    grid-column: 6 / -1;
+    grid-row: 1;
+    /* Se sale por el canto derecho: la escena no termina en la caja. */
+    margin-right: calc(-1 * var(--e-7));
+    margin-bottom: 0;
+    /*
+      `translate` y no `margin`: baja el vehículo SIN tocar el maquetado, así
+      que aterriza sobre el azul sin arrastrar consigo el texto ni cambiar el
+      alto de la fila.
+    */
+    translate: 0 var(--asoma);
+  }
+}
+
+.lp-escenario {
+  position: relative;
+  isolation: isolate;
+  /*
+    EL DESBORDE. El escenario mide menos de lo que ocupa, así que el camión cae
+    por debajo del borde del hero y aterriza sobre la franja azul. Es la unión
+    entre las dos secciones: dejan de ser dos bloques apilados y pasan a ser una
+    sola escena.
+  */
+  margin-bottom: calc(-1 * var(--asoma));
+}
+.lp-escenario img {
+  pointer-events: none;
+}
+
+.lp-estelas {
+  position: absolute;
+  z-index: var(--z-fondo);
+  left: -20%;
+  top: 46%;
+  width: 150%;
+  height: auto;
+  translate: 0 -44%;
+  opacity: 0.85;
+}
+
+/*
+  EL HALO ABRAZA AL REMOLQUE.
+
+  Medido en V3: el arco quedaba centrado en (1166, 419) y el vehículo en
+  (1063, 457), o sea desplazado arriba y a la derecha del volumen que debía
+  envolver. Anclado ahora al centro del remolque, con el origen de escala en su
+  base para que crezca desde donde apoya y no desde el aire.
+*/
+.lp-halo {
+  position: absolute;
+  z-index: var(--z-medio);
+  right: -4%;
+  top: 44%;
+  width: 76%;
+  height: auto;
+  translate: 0 -52%;
+  transform-origin: 50% 100%;
+}
+
+.lp-sombra {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: 4%;
+  width: 96%;
+  height: auto;
+  translate: -50% 0;
+  opacity: 0.9;
+}
+
+.lp-camion {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(var(--s-camion));
+}
+
+.lp-acento {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--naranja-texto);
+}
+
+.lp-microbeneficios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-2) var(--e-4);
+  font-size: 0.9375rem;
+  color: var(--gris);
+}
+.lp-microbeneficios li {
+  display: flex;
+  align-items: center;
+  gap: var(--e-1);
+}
+/*
+  EN TELÉFONO NO HAY MICROBENEFICIOS, Y ES UNA DECISIÓN MEDIDA.
+
+  Ocupaban dos renglones y 66px, y esos 66px empujaban el vehículo de Y 554 a
+  Y 620: el producto dejaba de asomar en el primer pliegue. Las tres frases
+  repiten además lo que ya dice el párrafo de arriba. La prioridad en 390 es
+  llamada, vehículo y producto, por ese orden.
+
+  Entre 480 y 639 se cae solo el tercero, que es el que provoca el segundo
+  renglón.
+*/
+@media (max-width: 639px) {
+  .lp-microbeneficios {
+    display: none;
+  }
+}
+@media (min-width: 640px) and (max-width: 767px) {
+  .lp-microbeneficios li[data-movil="no"] {
+    display: none;
+  }
+}
+
+/* Tableta y teléfono: el escenario se centra y se limita en alto. */
+@media (max-width: 1023px) {
+  .lp-escenario {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+  }
+  .lp-camion {
+    width: auto;
+    max-height: 300px;
+  }
+  .lp-halo {
+    right: auto;
+    left: 50%;
+    width: min(72%, 470px);
+    translate: -50% -52%;
+  }
+  .lp-estelas {
+    left: -12%;
+    width: 124%;
+    opacity: 0.62;
+  }
+}
+@media (max-width: 639px) {
+  .lp-escenario {
+    min-height: 0;
+  }
+  .lp-camion {
+    max-height: 176px;
+  }
+  .lp-halo {
+    width: min(66%, 240px);
+  }
+  .lp-estelas {
+    opacity: 0.42;
+  }
+}
+
+/* ------------------------------------------------------------ escenario -- */
+
+/*
+  LA FRANJA DE PRODUCTO, A SANGRE COMPLETA.
+
+  En V3 esto era una tarjeta azul con esquinas redondeadas flotando en una
+  página blanca: el producto se leía como una captura pegada, no como un sitio.
+  Ahora el azul ocupa el ancho entero y la consola vive DENTRO de él. Son tres
+  planos:
+
+    FONDO     el azul y su textura, a sangre
+    MEDIO     la luz: azul entrando por arriba a la izquierda, naranja saliendo
+              por abajo a la derecha, más la estela de neón del kit
+    FRENTE    la interfaz
+
+  La profundidad sale de ahí, no de inclinar un panel. Probé el giro en 3D en
+  V3: a este tamaño no se percibe y lo único que conseguía era promover la pieza
+  a su propia capa de composición.
+*/
+.lp-estadio {
+  position: relative;
+  z-index: var(--z-medio);
+  isolation: isolate;
+  overflow: clip;
+  background: var(--navy);
+  color: #ffffff;
+  /* El aire de arriba tiene que dejar sitio al camión que desborda del hero. */
+  padding-top: calc(var(--asoma) + var(--e-6));
+  padding-bottom: var(--seccion);
+}
+@media (min-width: 1024px) {
+  .lp-estadio {
+    padding-top: calc(var(--asoma) + var(--e-7));
+  }
+}
+
+.lp-estadio-textura {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-fondo);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/*
+  LA LUZ, EN DOS PUNTOS Y NO REPARTIDA.
+
+  Un resplandor homogéneo aplana; lo que da volumen es que la luz llegue desde
+  un sitio concreto. Azul arriba a la izquierda, naranja abajo a la derecha, y
+  entre medias nada.
+*/
+.lp-estadio-luz {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-fondo);
+  pointer-events: none;
+  background:
+    radial-gradient(
+      70% 55% at 12% 0%,
+      rgb(41 108 196 / 0.55) 0%,
+      rgb(41 108 196 / 0) 70%
+    ),
+    radial-gradient(
+      60% 50% at 100% 100%,
+      rgb(255 90 0 / 0.28) 0%,
+      rgb(255 90 0 / 0) 68%
+    );
+}
+
+/* Abajo del todo y hacia fuera: cruza el SUELO, no la lectura de la consola. */
+.lp-estadio-neon {
+  position: absolute;
+  z-index: var(--z-fondo);
+  right: -12%;
+  bottom: -18%;
+  width: 72%;
+  height: auto;
+  opacity: 0.75;
+  pointer-events: none;
+}
+@media (max-width: 767px) {
+  .lp-estadio-neon {
+    display: none;
+  }
+}
+
+.lp-estadio-cuerpo {
+  position: relative;
+  z-index: var(--z-frente);
+}
+
+/* -------------------------------------------------------------- consola -- */
+
+/*
+  UNA superficie, no cinco.
+
+  V3 apilaba rectángulo dentro de rectángulo dentro de rectángulo: la franja
+  azul, luego un módulo, luego otro módulo dentro. Acá hay una sola caja —la
+  consola— y todo lo de dentro se organiza con filas y filetes. Menos bordes y
+  más jerarquía.
+*/
+.lp-consola {
+  position: relative;
+  border-radius: var(--r-4);
+  /*
+    LA SUPERFICIE NO ES SOLO UN VELO BLANCO, Y HAY UN NÚMERO DETRÁS.
+
+    Con `rgb(255 255 255 / .045)` lo que se pinta bajo el texto es el escenario
+    entero: la luz azul, la textura y el neón. Calculado el peor punto —el
+    núcleo del foco azul, #2A6BC0 al 55% sobre el marino— la superficie efectiva
+    subía a ~#1A4A8E, y `--sobre-navy-3` (#a3b4d2) sobre ese color da 4,19:1: no
+    llega a AA para cuerpo.
+
+    El velo de marino al 66% acota el peor caso. Rehecho el cálculo con la luz a
+    plena intensidad detrás, el fondo efectivo no pasa de ~#204070 y el mismo
+    gris da 4,91:1. La profundidad se sigue leyendo porque el escenario de
+    alrededor SÍ enseña la luz y el neón: la consola es otro plano, que es
+    justamente lo que tiene que parecer.
+  */
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.02)),
+    rgb(6 22 56 / 0.66);
+  box-shadow: var(--s-producto), var(--s-brillo);
+  padding: var(--e-4);
+}
+@media (min-width: 768px) {
+  .lp-consola {
+    padding: var(--e-5);
+  }
+}
+@media (min-width: 1024px) {
+  .lp-consola {
+    display: grid;
+    grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
+    gap: var(--e-6);
+    padding: var(--e-6);
+  }
+}
+
+/*
+  El canto iluminado. Va como pseudo-elemento con una máscara de gradiente para
+  que el trazo EXISTA solo en las dos esquinas donde llega la luz y se apague en
+  el resto del perímetro. Un `border` daría el anillo parejo de interfaz de
+  videojuego que no queremos.
+*/
+.lp-consola::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgb(125 185 255 / 0.8) 0%,
+    rgb(125 185 255 / 0) 30%,
+    rgb(255 255 255 / 0) 64%,
+    rgb(255 122 46 / 0.62) 100%
+  );
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+}
+
+/*
+  EL SUELO.
+
+  Dos piezas. La sombra proyectada apoya el objeto; el reflejo lo sitúa sobre
+  una superficie. El reflejo va al 12% y muere a los pocos píxeles: por encima
+  de eso el texto de la consola se duplica borroso debajo y ensucia la lectura,
+  que es exactamente lo que no queremos de un espejo literal.
+*/
+.lp-suelo {
+  position: relative;
+  height: clamp(48px, 7vw, 96px);
+  margin-top: -1px;
+  pointer-events: none;
+}
+.lp-suelo::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 76%;
+  height: 100%;
+  translate: -50% 0;
+  background: radial-gradient(
+    50% 62% at 50% 0%,
+    rgb(255 255 255 / 0.12) 0%,
+    rgb(255 255 255 / 0) 72%
+  );
+}
+.lp-suelo::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 62%;
+  height: 34%;
+  translate: -50% 0;
+  border-radius: 999px;
+  background: rgb(255 122 46 / 0.28);
+  filter: blur(26px);
+}
+
+/* Barra lateral de la consola: evoca el menú del producto, no es un menú. */
+.lp-sidebar {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.875rem;
+  color: var(--sobre-navy-3);
+}
+@media (min-width: 1024px) {
+  .lp-sidebar {
+    display: flex;
+  }
+}
+/*
+  `> span` y no `span`. Con el selector descendente esta regla alcanzaba también
+  a los puntos anidados dentro de cada ítem y les imponía `height: 34px`,
+  `padding-inline: 12px` y `border-radius: 6px`: los puntos de 7px se pintaban
+  como rectángulos redondeados de 31x34. Se ve en la captura de Chrome.
+*/
+.lp-sidebar > span {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  padding-inline: var(--e-2);
+  border-radius: var(--r-1);
+}
+.lp-sidebar > span[data-activo] {
+  background: var(--naranja-texto);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Fila de la consola: filete arriba, nunca caja. */
+.lp-fila {
+  border-top: 1px solid rgb(255 255 255 / 0.12);
+  padding-top: var(--e-3);
+  margin-top: var(--e-3);
+}
+.lp-fila:first-child {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.lp-rotulo {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--sobre-navy-1);
+}
+
+/* --------------------------------------------------------------- suelos -- */
+
+.lp-claro {
+  background: var(--blanco);
+}
+.lp-frio {
+  background: var(--frio-2);
+}
+
+/* ----------------------------------------------------------- operación --- */
+
+.lp-op {
+  position: relative;
+  overflow: clip;
+  padding-block: var(--seccion);
+}
+
+/*
+  EL VEHÍCULO ROMPE LA RETÍCULA.
+
+  Sale por el borde izquierdo de la ventana en vez de quedarse educadamente
+  dentro de la columna. Es la misma fotografía del hero y de la llamada final:
+  no hay un segundo camión, y NO se espeja. Lo intenté en V3 para que mirara
+  hacia el texto y el logotipo del remolque quedó al revés, «OBMUЯ», que es
+  exactamente el detalle que delata una portada hecha deprisa.
+*/
+.lp-op-escenario {
+  position: relative;
+  isolation: isolate;
+}
+@media (min-width: 1024px) {
+  .lp-op-escenario {
+    margin-left: calc(-1 * var(--e-8));
+  }
+}
+.lp-op-halo {
+  position: absolute;
+  z-index: var(--z-fondo);
+  left: 46%;
+  top: 48%;
+  width: 82%;
+  height: auto;
+  translate: -50% -54%;
+  opacity: 0.9;
+}
+.lp-op-sombra {
+  position: absolute;
+  z-index: var(--z-medio);
+  left: 50%;
+  bottom: 2%;
+  width: 92%;
+  height: auto;
+  translate: -50% 0;
+  opacity: 0.75;
+}
+.lp-op-camion {
+  position: relative;
+  z-index: var(--z-frente);
+  width: 100%;
+  height: auto;
+}
+
+/*
+  Caja fija y anclado arriba, a la altura del título.
+
+  El problema que resolvía antes esta regla sigue vigente con trazo: dentro de
+  un `<li>` en flex, un icono sin alto propio se estira a la altura de su fila y
+  cada uno acaba de un tamaño según cuántas líneas ocupe el texto de al lado.
+  Medidos con los PNG anteriores: 64x79, 64x79 y 64x62.
+
+  40 y 44px, no 56-72: a esa escala un trazo de interfaz se ve alambre, y lo que
+  se pedía era icono LIMPIO, no icono grande.
+*/
+.lp-icono {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  align-self: flex-start;
+}
+@media (min-width: 768px) {
+  .lp-icono {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* ---------------------------------------------------------- resultados --- */
+
+/*
+  Cuatro beneficios SIN icono y SIN tarjeta.
+
+  Llevaban un icono lineal cada uno, del mismo tamaño, encima del mismo título,
+  dentro del mismo hueco: cuatro celdas idénticas es la plantilla que se
+  reconoce a un metro de distancia. Ahora es una lista editorial: filete, título
+  en peso alto, una línea de texto. Lo que distingue a cada uno es lo que dice.
+*/
+.lp-beneficios {
+  display: grid;
+  gap: 0;
+}
+@media (min-width: 768px) {
+  .lp-beneficios {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--e-7);
+  }
+}
+.lp-beneficios li {
+  border-top: 1px solid var(--linea);
+  padding-block: var(--e-4);
+}
+
+.lp-barra {
+  border-radius: 2px 2px 0 0;
+  background: var(--naranja);
+}
+
+/*
+  ENTRE 1024 Y 1279 EL VEHÍCULO SE APARTA DEL TEXTO.
+
+  Medido en Chrome real: a 1024 el párrafo termina en x 436 y la caja del camión
+  empieza en x 431. Y el archivo NO tiene margen transparente —el primer píxel
+  de carrocería opaca está en el 0,4% del ancho—, así que la caja ES el camión:
+  eran 3px de solape sobre chapa, no sobre aire. Con 48px de margen la
+  carrocería arranca en 479 y quedan 43px de aire; el vehículo sigue midiendo el
+  54% del ancho. Desde 1280 las columnas ya son anchas de sobra y no hace falta.
+*/
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .lp-escenario {
+    margin-left: var(--e-6);
+  }
+}
+
+/*
+  MÁS ALLÁ DE 1440 LA ESCENA SIGUE HASTA EL BORDE DE LA VENTANA.
+
+  El contenido está limitado a 1440 y centrado, así que en 1920 sobran 240px a
+  cada lado. Dejarlos en blanco hace que el vehículo encoja en proporción
+  —medido: 57,2% del ancho a 1440 y solo 43,2% a 1920— y la escena se vuelve
+  pequeña justo donde hay más sitio.
+
+  El cálculo es la distancia exacta del canto derecho de la caja de contenido al
+  canto de la ventana: la mitad del sobrante más el relleno lateral. A 1440 da
+  -64px, que es lo mismo que había; a 1920 da -304px y el camión llega al borde.
+*/
+@media (min-width: 1440px) {
+  .lp-escenario,
+  .lp-cta-camion {
+    margin-right: calc(720px - 50vw - var(--e-7));
+  }
+}
+
+/* --------------------------------------------------------------- cierre -- */
+
+/*
+  LA LLAMADA FINAL ENTRA EN DIAGONAL.
+
+  Un rectángulo naranja pegado debajo de una sección blanca es un cambio de
+  color, no una escena. El corte inclinado hace que la superficie llegue en
+  movimiento, que es de lo que trata la marca. Ángulo muy bajo, y solo desde
+  768: en teléfono una diagonal se come alto útil sin aportar.
+*/
+.lp-cta {
+  position: relative;
+  overflow: clip;
+  background: var(--naranja);
+  color: var(--navy);
+  padding-block: var(--seccion);
+}
+@media (min-width: 768px) {
+  .lp-cta {
+    clip-path: polygon(0 2.2vw, 100% 0, 100% 100%, 0 100%);
+    margin-top: -2.2vw;
+    padding-top: calc(var(--seccion) + 2.2vw);
+  }
+}
+
+.lp-cta-estelas {
+  position: absolute;
+  z-index: var(--z-fondo);
+  left: 0;
+  bottom: -18%;
+  width: 100%;
+  height: auto;
+  mix-blend-mode: soft-light;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.lp-cta-camion {
+  position: relative;
+  display: none;
+}
+@media (min-width: 1024px) {
+  .lp-cta-camion {
+    display: block;
+    /* Sale por el borde derecho: la escena continúa fuera de la página. */
+    margin-right: calc(-1 * var(--e-9));
+  }
+}
+.lp-cta-sombra {
+  position: absolute;
+  z-index: var(--z-fondo);
+  left: 50%;
+  bottom: 2%;
+  width: 92%;
+  height: auto;
+  translate: -50% 0;
+  opacity: 0.35;
+}
+
+/* --------------------------------------------------------------- footer -- */
+
+/*
+  PIE OSCURO, MARCA GRANDE.
+
+  El pie blanco de V3 era correcto y se desvanecía: después de una franja
+  naranja a sangre, volver al blanco es bajar el telón a media función. En azul
+  marino la página CIERRA. Y con cuatro destinos reales, la marca a tamaño
+  grande es lo que llena el espacio: no hacen falta columnas inventadas de blog,
+  webinars ni redes que no existen.
+*/
+.lp-footer {
+  background: var(--navy);
+  color: var(--sobre-navy-2);
+  padding-top: var(--e-8);
+  padding-bottom: var(--e-6);
+}
+
+.lp-footer-cima {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-6);
+}
+@media (min-width: 900px) {
+  .lp-footer-cima {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--e-7);
+  }
+}
+
+/*
+  El logotipo del pie crece con la ventana. `Logo` fija el alto en línea, así
+  que hace falta `!important` para pasarle por encima; es el único de todo el
+  archivo y está acá porque la alternativa era duplicar el componente.
+*/
+.lp-footer-marca {
+  height: clamp(40px, 5.4vw, 68px) !important;
+  width: auto !important;
+}
+
+.lp-footer-frase {
+  margin-top: var(--e-4);
+  max-width: 34ch;
+  font-size: clamp(1.0625rem, 1.6vw, 1.25rem);
+  line-height: 1.55;
+  color: var(--sobre-navy-2);
+}
+
+.lp-footer-pie {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+  margin-top: var(--e-7);
+  border-top: 1px solid rgb(255 255 255 / 0.14);
+  padding-top: var(--e-4);
+}
+@media (min-width: 640px) {
+  .lp-footer-pie {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--e-5);
+  }
+}
+
+.lp-footer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--e-5);
+}
+.lp-footer-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--sobre-navy-2);
+  transition: color var(--m-ui) ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .lp-footer-nav a:hover {
+    color: #ffffff;
+  }
+}
+.lp-footer-legal {
+  font-size: 0.9375rem;
+  color: var(--sobre-navy-3);
+}
+
+/* ---------------------------------------------------------- movimiento --- */
+
+/*
+  LA SECUENCIA DE APERTURA.
+
+  Ocho pasos solapados, no ocho diapositivas. El solape es lo que separa una
+  entrada de una presentación: cada pieza arranca antes de que termine la
+  anterior, así que lo que se ve es una sola cosa apareciendo, no una lista.
+
+  Va en @keyframes de CSS y no en JavaScript a propósito: las animaciones de CSS
+  corren fuera del hilo principal y se ejecutan aunque el JavaScript no cargue,
+  así que el hero se compone igual con la red caída. `both` mantiene el estado
+  inicial durante el retardo; eso solo es seguro porque nada de esto depende de
+  que un script llegue a ejecutarse.
+*/
+@keyframes lp-entra {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+  El titular se descubre por máscara, no por desvanecido: la letra ya está
+  compuesta y lo que se mueve es el borde que la destapa. Es el gesto de un
+  cartel, que es de lo que va esta tipografía.
+*/
+@keyframes lp-descubre {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 108% 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 -10% 0);
+  }
+}
+
+@keyframes lp-llega {
+  from {
+    opacity: 0;
+    transform: translate(18px, 22px) scale(0.985);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes lp-ilumina {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.lp-hero [data-paso] {
+  animation: lp-entra var(--m-seccion) var(--ease-out) both;
+  animation-delay: var(--paso, 0ms);
+}
+.lp-hero [data-paso="titular"] {
+  animation-name: lp-descubre;
+  animation-duration: var(--m-hero);
+  animation-timing-function: var(--ease-soft);
+}
+.lp-hero [data-paso="camion"] {
+  animation-name: lp-llega;
+  animation-duration: var(--m-hero);
+  animation-timing-function: var(--ease-soft);
+}
+.lp-hero [data-paso="halo"],
+.lp-hero [data-paso="estelas"] {
+  animation-name: lp-ilumina;
+  animation-duration: var(--m-hero);
+  animation-timing-function: var(--ease-soft);
+}
+
+/*
+  CUATRO REVELADOS CON OFICIO, no uno repetido.
+
+  Un mismo desvanecido-hacia-arriba aplicado a todas las secciones es el reflejo
+  uniforme que delata una página generada. Cada uno de éstos se usa donde
+  significa algo:
+
+    subir    texto que entra en la lectura
+    mascara  superficies grandes que se destapan
+    escala   la consola, que se acerca
+    linea    filetes y reglas, que se trazan
+*/
+.lp [data-anima] {
+  transition:
+    opacity var(--m-seccion) var(--ease-out),
+    transform var(--m-seccion) var(--ease-out),
+    clip-path var(--m-seccion) var(--ease-soft);
+  transition-delay: var(--retardo, 0ms);
+}
+.lp [data-anima="subir"][data-entra] {
+  opacity: 0;
+  transform: translateY(18px);
+}
+.lp [data-anima="mascara"][data-entra] {
+  opacity: 0;
+  clip-path: inset(0 0 24% 0);
+}
+.lp [data-anima="escala"][data-entra] {
+  opacity: 0;
+  transform: scale(0.985) translateY(10px);
+}
+.lp [data-anima="linea"][data-entra] {
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+
+/*
+  MOVIMIENTO REDUCIDO: todo visible, nada se desplaza.
+
+  No es «sin animación»: se conserva el cambio de opacidad, que ayuda a entender
+  que algo apareció, y se elimina cualquier desplazamiento, recorte o escala,
+  que es lo que provoca el mareo. 110ms, por debajo del umbral de percepción de
+  movimiento.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .lp [data-anima],
+  .lp [data-anima][data-entra],
+  .lp-hero [data-paso] {
+    transform: none !important;
+    clip-path: none !important;
+    filter: none !important;
+    animation: none !important;
+    transition: opacity 110ms linear !important;
+    transition-delay: 0ms !important;
+  }
+  .lp * {
+    scroll-behavior: auto !important;
+  }
+}
