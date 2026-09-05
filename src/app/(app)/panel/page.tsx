@@ -2,12 +2,10 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { requireUser, canWrite } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { ALERT_LABEL, ALERT_TONE, getAlerts } from "@/lib/alerts";
+import { ALERT_LABEL, ALERT_TONE, getAlerts, type Alert } from "@/lib/alerts";
 import { getDashboardStats, getMonthlySeries } from "@/lib/stats";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Plate } from "@/components/ui/Plate";
-import { Section } from "@/components/ui/Section";
 import { LinkButton } from "@/components/ui/Button";
 import { RecordList, RecordRow } from "@/components/RecordList";
 import { FleetStatusBar } from "@/components/FleetStatusBar";
@@ -24,6 +22,33 @@ import {
 
 export const metadata = { title: "Panel" };
 
+/**
+ * CENTRO DE SITUACIÓN.
+ *
+ * Es la pantalla que se abre a las siete de la mañana para saber, sin leer
+ * nada dos veces, qué pasa con la flota y qué hay que resolver hoy. Tres
+ * niveles de peso visual, y el orden es el de las preguntas, no el de las
+ * tablas de la base:
+ *
+ *   1  QUÉ ESTÁ PASANDO      la franja de flota, a todo el ancho
+ *   2  QUÉ NECESITA ATENCIÓN la columna ancha, con la criticidad separada
+ *      QUÉ ESTÁ OCURRIENDO   el carril: primero la ruta, después el dinero
+ *   3  CONTEXTO              la serie de seis meses, al pie del carril
+
+ * El carril va en ese orden —operación antes que economía— porque ésa es la
+ * prioridad de las preguntas, y porque al apilarse en un teléfono produce
+ * situación → atención → operación → economía, que es como se lee de pie.
+ *
+ * Lo que cambió respecto de la versión anterior: aquélla apilaba cuatro
+ * bloques del mismo peso a todo el ancho, y la lista de alertas —doce filas—
+ * empujaba los viajes y el dinero fuera de la primera pantalla. Medido a
+ * 1440×900: había que desplazarse para ver si el mes iba bien. Ahora las
+ * cuatro respuestas caben arriba y la lista larga vive en su columna.
+ *
+ * Lo que NO hay, porque no existe en Rumbo: posición, mapa, velocidad,
+ * telemetría, hora estimada de llegada, predicción de nada. Un centro de
+ * situación que inventa datos es peor que no tenerlo.
+ */
 export default async function DashboardPage() {
   const user = await requireUser();
   const editable = canWrite(user);
@@ -124,37 +149,20 @@ export default async function DashboardPage() {
   ).size;
 
   /*
-    Severidad. `expired` y `critical` son los dos niveles de `alerts.ts` que no
-    admiten espera; se cuentan por separado porque no son lo mismo: uno ya se
-    venció y el otro todavía no. No se suman a la composición de abajo, que es
-    por tipo: contar la misma alerta dos veces rompería el conteo del título.
-  */
-  const vencidas = alertas.filter((a) => a.level === "expired").length;
-  const urgentes = alertas.filter((a) => a.level === "critical").length;
-  const severidad = [
-    vencidas > 0 && `${vencidas} ${vencidas === 1 ? "vencida" : "vencidas"}`,
-    urgentes > 0 && `${urgentes} ${urgentes === 1 ? "urgente" : "urgentes"}`,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-  const excepciones = sinConductor.length + sinVehiculo.length;
+    CRITICIDAD SEPARADA, que es lo que la versión anterior mezclaba.
 
-  /*
-    De qué está hecho el total. Las categorías salen de `alert.kind`, que ya
-    define `alerts.ts`: no se inventa ninguna. Sin esto, un «13» junto a un «6»
-    a diez centímetros se lee como una contradicción, cuando lo que pasa es que
-    cuentan unidades distintas: aquí situaciones, allá vehículos.
+    Los tres niveles los define `alerts.ts` y no se reinterpretan acá: vencido
+    es lo que ya pasó de fecha, urgente lo que vence dentro de siete días, por
+    vencer el resto de la ventana de treinta. La falta de asignación es una
+    cuarta cosa y va aparte a propósito: no tiene fecha, no caduca y no puede
+    ordenarse junto a las otras sin mentir.
   */
-  const porClase = [
-    ["documentos", alertas.filter((a) => a.kind === "document").length],
-    ["licencias", alertas.filter((a) => a.kind === "license").length],
-    ["mantenimientos", alertas.filter((a) => a.kind === "maintenance").length],
-    ["sin asignación", excepciones],
-  ] as const;
-  const composicion = porClase
-    .filter(([, n]) => n > 0)
-    .map(([etiqueta, n]) => `${n} ${etiqueta}`)
-    .join(" · ");
+  const vencidas = alertas.filter((a) => a.level === "expired");
+  const urgentes = alertas.filter((a) => a.level === "critical");
+  const porVencer = alertas.filter((a) => a.level === "warning");
+  const excepciones = sinConductor.length + sinVehiculo.length;
+  const totalAtencion = alertas.length + excepciones;
+
   const mes = startOfMonthLabel();
   /*
     La condición mira DINERO, no viajes.
@@ -167,362 +175,528 @@ export default async function DashboardPage() {
   */
   const sinMovimientos = stats.revenue === 0 && stats.expenses === 0;
 
+  const hoy = new Intl.DateTimeFormat("es-CO", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(new Date());
+
   return (
     <>
-      <PageHeader
-        mobileCompact
-        title="Panel"
-        description="Cómo está tu flota ahora y dónde hay que actuar."
-        actions={
-          editable && (
+      {/* =========================== CABECERA ============================= */}
+      {/*
+        Compacta a propósito: 48px, no 150. No saluda por su nombre a quien ya
+        sabe quién es y acaba de escribir su contraseña. La fecha sí va, porque
+        todo lo de abajo —lo que vence, lo que va del mes— se lee contra ella.
+      */}
+      <header className="mb-5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 sm:mb-6">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold tracking-tight text-[var(--text)] sm:text-2xl">
+            Centro de situación
+          </h1>
+          <p className="mt-0.5 text-sm text-[var(--text-muted)] first-letter:uppercase">
+            {hoy}
+          </p>
+        </div>
+        {editable && (
+          <div className="shrink-0 no-print">
             <LinkButton href="/viajes/nuevo">
               <Plus className="size-5" aria-hidden />
               Registrar viaje
             </LinkButton>
-          )
-        }
-      />
-
-      {/* ======================= CAPA 1 · SITUACIÓN AHORA ==================== */}
-      {/*
-        Estado presente, no actividad acumulada. Todo lo de esta capa se
-        responde con una consulta sobre cómo están las cosas en este momento;
-        nada de aquí depende de un periodo.
-      */}
-      <Section
-        title="Situación ahora"
-        description={`${flotaTotal} ${flotaTotal === 1 ? "vehículo" : "vehículos"} en la flota · ${conductoresTotal} ${conductoresTotal === 1 ? "conductor" : "conductores"}`}
-        className="mb-8"
-      >
-        {flotaTotal > 0 && (
-          <FleetStatusBar
-            conteos={conteos}
-            conAlertas={vehiculosConAlerta}
-            estadoActivo=""
-            basePath="/camiones"
-            queryString=""
-            etiquetaAlertas={(n) =>
-              n === 1 ? "vehículo con alertas" : "vehículos con alertas"
-            }
-          />
+          </div>
         )}
+      </header>
 
-        <dl className="grid grid-cols-2 gap-x-8 border-t border-[var(--border)] sm:grid-cols-4">
-          <Cifra
-            rotulo="Viajes en curso"
-            valor={String(enCurso.length)}
-            nota="Marcados «En curso»"
-          />
-          <Cifra
-            rotulo="Viajes programados"
-            valor={String(programados)}
-            nota="Todavía sin salir"
-          />
-          <Cifra
-            rotulo="Vehículos sin conductor"
-            valor={String(sinConductor.length)}
-            nota="Sin asignación vigente"
-            alerta={sinConductor.length > 0}
-          />
-          <Cifra
-            rotulo="Conductores sin vehículo"
-            valor={String(sinVehiculo.length)}
-            nota="Sin asignación vigente"
-            alerta={sinVehiculo.length > 0}
-          />
-        </dl>
-      </Section>
+      {/* ================== NIVEL 1 · SITUACIÓN DE LA FLOTA ================ */}
+      {/*
+        A todo el ancho y arriba de todo porque es la pregunta uno. El total va
+        en grande a la izquierda y el reparto a la derecha: el número dice el
+        tamaño de la operación, la franja dice en qué está metida. Cada estado
+        filtra la lista de vehículos, así que la franja no solo informa: es la
+        entrada a la pantalla donde se resuelve.
+      */}
+      {flotaTotal > 0 && (
+        <section
+          aria-label="Situación de la flota"
+          className="mb-6 border-y border-[var(--border)] py-4 sm:mb-8"
+        >
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-8">
+            <p className="flex shrink-0 items-baseline gap-2 sm:flex-col sm:gap-0">
+              <span className="font-mono text-3xl font-semibold tabular-nums text-[var(--text)] sm:text-4xl">
+                {flotaTotal}
+              </span>
+              <span className="text-sm text-[var(--text-muted)]">
+                {flotaTotal === 1 ? "vehículo" : "vehículos"} ·{" "}
+                {conductoresTotal}{" "}
+                {conductoresTotal === 1 ? "conductor" : "conductores"}
+              </span>
+            </p>
+            <div className="min-w-0 flex-1">
+              <FleetStatusBar
+                conteos={conteos}
+                conAlertas={vehiculosConAlerta}
+                estadoActivo=""
+                basePath="/camiones"
+                queryString=""
+                className=""
+                etiquetaAlertas={(n) =>
+                  n === 1 ? "vehículo con alertas" : "vehículos con alertas"
+                }
+              />
+            </div>
+          </div>
+        </section>
+      )}
 
-      {/* ===================== CAPA 2 · NECESITA ATENCIÓN ==================== */}
-      <Section
-        title="Necesita atención"
-        count={alertas.length + excepciones}
-        description={alertas.length + excepciones > 0 ? composicion : undefined}
-        className="mb-8"
-      >
-        {alertas.length === 0 && excepciones === 0 ? (
-          /*
-            Sin alertas no se celebra: se informa. La operación normal es que no
-            haya nada vencido, así que esto es la línea de base, no un logro.
-          */
-          <div className="rounded-[var(--r-surface)] border border-dashed border-[var(--border)] px-4 py-5">
-            <p className="max-w-prose text-[var(--text-muted)]">
+      {/* ============ NIVEL 2 · LO QUE HAY QUE RESOLVER Y LO QUE PASA ====== */}
+      {/*
+        Dos columnas desde 1024, 7/5. La ancha es para lo que se lee fila por
+        fila; la angosta para lo que se lee de un vistazo. En un portátil de
+        1024 las dos siguen siendo utilizables porque ninguna lleva tabla: son
+        listas que se apilan solas.
+      */}
+      <div className="mb-8 grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-x-10">
+        {/* ------------------------ necesita atención -------------------- */}
+        <section aria-labelledby="h-atencion" className="lg:col-span-7">
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <h2
+              id="h-atencion"
+              className="flex items-baseline gap-2 text-lg font-semibold text-[var(--text)]"
+            >
+              Necesita atención
+              <span className="font-mono text-sm font-medium tabular-nums text-[var(--text-muted)]">
+                {totalAtencion}
+              </span>
+            </h2>
+            <p className="text-sm text-[var(--text-muted)]">
+              Ventana de 30 días
+            </p>
+          </div>
+
+          {totalAtencion === 0 ? (
+            /*
+              Sin alertas no se celebra: se informa. Que no haya nada vencido es
+              la operación normal, no un logro.
+            */
+            <p className="rounded-[var(--r-surface)] border border-dashed border-[var(--border)] px-4 py-5 text-[var(--text-muted)]">
               Sin documentos, licencias ni mantenimientos por vencer en los
               próximos 30 días, y sin vehículos ni conductores sin asignación
               vigente.
             </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-6">
-            {alertas.length > 0 && (
-              /*
-                Se listan TODAS, no las primeras seis.
+          ) : (
+            <>
+              {/*
+                EL TRIAJE. Cuatro números que dicen cuánto de cada gravedad hay,
+                antes de que nadie lea una sola fila. Es lo que permite decidir
+                en tres segundos si esta mañana hay que correr o no.
 
-                Antes había un «Ver las 12» que llevaba a /documentos, y la
-                composición real desmiente ese destino: de las doce alertas,
-                cinco son documentos, dos son licencias de conducción —que son
-                un campo de Driver, no un Document— y cinco son mantenimientos
-                programados. Mandarlas todas a Documentos habría sido decir que
-                el conjunto es algo que no es.
+                No son tarjetas: es una fila con divisores. Cuatro rectángulos
+                clonados con sombra dirían lo mismo ocupando el triple.
+              */}
+              <dl className="mb-4 grid grid-cols-2 border-y border-[var(--border)] sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
+                <Triaje
+                  valor={vencidas.length}
+                  rotulo="Vencido"
+                  nota="Ya pasó la fecha"
+                  tono="danger"
+                />
+                <Triaje
+                  valor={urgentes.length}
+                  rotulo="Urgente"
+                  nota="Vence en 7 días o menos"
+                  tono="danger"
+                />
+                <Triaje
+                  valor={porVencer.length}
+                  rotulo="Por vencer"
+                  nota="Dentro de 30 días"
+                  tono="warning"
+                />
+                <Triaje
+                  valor={excepciones}
+                  rotulo="Sin asignación"
+                  nota="Vehículo o conductor libre"
+                  tono="warning"
+                />
+              </dl>
 
-                No existe una pantalla que represente el conjunto y esta fase no
-                crea rutas nuevas, así que la salida correcta no es un enlace
-                equivocado ni esconder seis alertas detrás de un número: es
-                mostrarlas. Vienen ordenadas por severidad y cada fila navega a
-                su objeto real.
-              */
-              <div className="flex flex-col gap-3">
-                {severidad && (
-                  /*
-                    La severidad va aparte, y dice de dónde sale.
+              {/*
+                Una sola lista, con encabezados de grupo dentro. Cuatro listas
+                en cuatro cajas serían cuatro bordes y cuatro sombras para decir
+                lo mismo; acá la caja es una y los grupos se separan con una
+                línea y una palabra.
 
-                    Es un subconjunto de las MISMAS alertas, miradas por plazo
-                    en vez de por tipo. Por eso no puede ir en la línea de
-                    composición: allí se leería como una quinta categoría y la
-                    suma dejaría de cuadrar con el conteo del encabezado. Las
-                    palabras son las que ya lleva la insignia de cada fila:
-                    «Vencido» y «Urgente».
-                  */
-                  <p className="text-sm font-medium text-[var(--tone-danger-fg)]">
-                    <span className="block font-normal text-[var(--text-muted)]">
-                      De las {alertas.length} alertas:
-                    </span>
-                    {severidad}
-                  </p>
-                )}
-                <RecordList vacio="">
-                  {alertas.map((a) => {
-                    const sujeto = sujetoDe(a.href);
-                    return (
-                      <RecordRow
-                        key={a.id}
-                        href={a.href}
-                        /*
-                          El tipo de alerta va solo en el título y el sujeto baja
-                          a la línea de metadatos. Al principio los puse juntos y
-                          a 390px la fila se rompía en cuatro renglones: el tipo,
-                          la placa, la insignia y el plazo peleando por el mismo
-                          ancho. El sujeto en la segunda línea deja el título
-                          corto, la insignia a su lado y el plazo alineado a la
-                          derecha, que es lo que permite comparar urgencias
-                          bajando la vista.
-                        */
-                        titulo={a.title.split(" — ")[0]}
-                        estado={
-                          <Badge tone={ALERT_TONE[a.level]} variant="quiet">
-                            {ALERT_LABEL[a.level]}
-                          </Badge>
-                        }
-                        meta={
-                          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                            {sujeto?.tipo === "vehiculo" && sujeto.placa && (
-                              <Plate value={sujeto.placa} size="sm" framed={false} />
-                            )}
-                            {sujeto?.tipo === "conductor" && sujeto.nombre && (
-                              <span className="font-medium text-[var(--text)]">
-                                {sujeto.nombre}
-                              </span>
-                            )}
-                            <span>· {a.detail}</span>
-                            {/*
-                              En un teléfono el plazo viaja en esta línea. Como
-                              columna a la derecha —`shrink-0`— dejaba al
-                              contenido sin ancho y la fila se rompía en cuatro
-                              renglones: medido, 147px de alto a 390px. Desde
-                              640px vuelve a la derecha, que es donde permite
-                              comparar urgencias bajando la vista.
-                            */}
-                            <span className="sm:hidden">
-                              · {relativeDays(a.days)}
-                            </span>
-                          </span>
-                        }
-                        cifra={
-                          <span className="hidden sm:inline">
-                            {relativeDays(a.days)}
-                          </span>
-                        }
-                      />
-                    );
-                  })}
-                </RecordList>
-              </div>
-            )}
+                Se muestran TODAS. Hubo un «Ver las 12» que llevaba a
+                /documentos, y la composición real desmiente ese destino: de las
+                doce, unas son documentos, otras licencias —que son un campo del
+                conductor, no un Document— y otras mantenimientos. No existe una
+                pantalla que represente el conjunto, así que la salida honesta
+                no es un enlace equivocado ni esconder ocho filas detrás de un
+                número: es mostrarlas, agrupadas por lo que urge.
+              */}
+              <RecordList vacio="">
+                <Grupo titulo="Vencido" n={vencidas.length} tono="danger" />
+                {vencidas.map((a) => (
+                  <FilaAlerta key={a.id} alerta={a} sujeto={sujetoDe(a.href)} />
+                ))}
 
-            {/*
-              Las asignaciones que faltan no son alertas de vencimiento: no
-              tienen fecha ni caducan, así que no se mezclan con la lista
-              anterior ni pasan por `alerts.ts`. Van en su propio bloque, con su
-              propio encabezado, para que se entienda que son otra cosa.
-            */}
-            {excepciones > 0 && (
-              <div>
-                <h3 className="mb-2 font-semibold">Sin asignación</h3>
-                <RecordList vacio="">
-                  {sinConductor.map((v) => (
-                    <RecordRow
-                      key={`v-${v.id}`}
-                      href={`/camiones/${v.id}`}
-                      titulo="Vehículo sin conductor"
-                      estado={
-                        <Badge tone={TRUCK_STATUS[v.status].tone} variant="quiet">
-                          {TRUCK_STATUS[v.status].label}
-                        </Badge>
-                      }
-                      meta={
-                        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                          <Plate value={v.plate} size="sm" framed={false} />
-                          <span>
-                            · {v.brand} {v.model}
-                          </span>
+                <Grupo titulo="Urgente" n={urgentes.length} tono="danger" />
+                {urgentes.map((a) => (
+                  <FilaAlerta key={a.id} alerta={a} sujeto={sujetoDe(a.href)} />
+                ))}
+
+                <Grupo titulo="Por vencer" n={porVencer.length} tono="warning" />
+                {porVencer.map((a) => (
+                  <FilaAlerta key={a.id} alerta={a} sujeto={sujetoDe(a.href)} />
+                ))}
+
+                {/*
+                  La falta de asignación cierra la lista y lleva su propio
+                  encabezado: no viene de `alerts.ts`, no tiene fecha y no se
+                  ordena por plazo. Es una excepción operacional, no un
+                  vencimiento.
+                */}
+                <Grupo titulo="Sin asignación" n={excepciones} tono="warning" />
+                {sinConductor.map((v) => (
+                  <RecordRow
+                    key={`v-${v.id}`}
+                    href={`/camiones/${v.id}`}
+                    titulo="Vehículo sin conductor"
+                    estado={
+                      <Badge tone={TRUCK_STATUS[v.status].tone} variant="quiet">
+                        {TRUCK_STATUS[v.status].label}
+                      </Badge>
+                    }
+                    meta={
+                      <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <Plate value={v.plate} size="sm" framed={false} />
+                        <span>
+                          · {v.brand} {v.model}
                         </span>
-                      }
-                    />
-                  ))}
-                  {sinVehiculo.map((c) => (
-                    <RecordRow
-                      key={`c-${c.id}`}
-                      href={`/conductores/${c.id}`}
-                      titulo="Conductor sin vehículo"
-                      meta={
-                        <span className="font-medium text-[var(--text)]">
-                          {fullName(c)}
-                        </span>
-                      }
-                    />
-                  ))}
-                </RecordList>
-              </div>
-            )}
-          </div>
-        )}
-      </Section>
+                      </span>
+                    }
+                  />
+                ))}
+                {sinVehiculo.map((c) => (
+                  <RecordRow
+                    key={`c-${c.id}`}
+                    href={`/conductores/${c.id}`}
+                    titulo="Conductor sin vehículo"
+                    meta={
+                      <span className="font-medium text-[var(--text)]">
+                        {fullName(c)}
+                      </span>
+                    }
+                  />
+                ))}
+              </RecordList>
+            </>
+          )}
+        </section>
 
-      {/* ====================== CAPA 2b · OPERACIÓN ACTUAL =================== */}
-      <Section
-        title="En ruta ahora"
-        count={enCurso.length}
-        className="mb-8"
-        action={<Enlace href="/viajes">Todos los viajes</Enlace>}
-      >
-        <RecordList vacio="Ningún vehículo marcado en ruta en este momento.">
-          {enCurso.map((v) => (
-            <RecordRow
-              key={v.id}
-              href={`/viajes/${v.id}`}
-              titulo={`${v.origin} → ${v.destination}`}
-              estado={
-                <Badge tone={TRIP_STATUS[v.status].tone} variant="quiet">
-                  {TRIP_STATUS[v.status].label}
-                </Badge>
-              }
-              meta={
-                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <Plate value={v.truck.plate} size="sm" framed={false} />
-                  <span>
-                    · <span className="font-mono">{v.code}</span> · salió el{" "}
-                    {date(v.departureAt)}
-                    {v.driver ? ` · ${fullName(v.driver)}` : " · sin conductor"}
-                  </span>
+        {/* --------------------- columna de la operación ------------------ */}
+        <div className="flex flex-col gap-8 lg:col-span-5">
+          {/* ......................... en ruta ahora ....................... */}
+          <section aria-labelledby="h-ruta">
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <h2
+                id="h-ruta"
+                className="flex items-baseline gap-2 text-lg font-semibold text-[var(--text)]"
+              >
+                En ruta ahora
+                <span className="font-mono text-sm font-medium tabular-nums text-[var(--text-muted)]">
+                  {enCurso.length}
                 </span>
-              }
-            />
-          ))}
-        </RecordList>
-      </Section>
+              </h2>
+              <Enlace href="/viajes">
+                {programados > 0
+                  ? `${programados} ${programados === 1 ? "programado" : "programados"}`
+                  : "Todos los viajes"}
+              </Enlace>
+            </div>
 
-      {/* ==================== CAPA 3 · CONTEXTO FINANCIERO =================== */}
-      <Section
-        title="Contexto financiero"
-        description={`${mes} · lo que entró y lo que salió`}
-        className="mb-8"
-        action={<Enlace href="/reportes">Ver reportes</Enlace>}
-      >
-        {sinMovimientos ? (
-          /*
-            El mes puede no tener actividad todavía, y tres ceros gigantes se
-            leen como una aplicación rota. Se dice con palabras y se deja la
-            serie de seis meses debajo, que sí tiene contenido: el contexto no
-            desaparece porque el mes recién empiece.
-          */
-          <div className="rounded-[var(--r-surface)] border border-dashed border-[var(--border)] px-4 py-5">
-            <p className="max-w-prose text-[var(--text-muted)]">
-              Sin movimientos registrados en {mes.toLowerCase()}
-              {stats.tripsThisMonth > 0
-                ? `: hay ${stats.tripsThisMonth} ${stats.tripsThisMonth === 1 ? "viaje con salida" : "viajes con salida"} en el mes, pero todavía ninguno facturado ni con gastos cargados`
-                : ""}
-              . Abajo está la evolución de los seis meses anteriores.
+            <RecordList vacio="No hay viajes en curso.">
+              {enCurso.map((v) => (
+                <RecordRow
+                  key={v.id}
+                  href={`/viajes/${v.id}`}
+                  titulo={`${v.origin} → ${v.destination}`}
+                  estado={
+                    <Badge tone={TRIP_STATUS[v.status].tone} variant="quiet">
+                      {TRIP_STATUS[v.status].label}
+                    </Badge>
+                  }
+                  meta={
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <Plate value={v.truck.plate} size="sm" framed={false} />
+                      <span>
+                        · <span className="font-mono">{v.code}</span> · salió el{" "}
+                        {date(v.departureAt)}
+                      </span>
+                      <span className="basis-full text-[var(--text-muted)]">
+                        {v.driver ? fullName(v.driver) : "Sin conductor"}
+                      </span>
+                    </span>
+                  }
+                />
+              ))}
+            </RecordList>
+          </section>
+          {/* ........................ dinero del mes ....................... */}
+          <section aria-labelledby="h-mes">
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <h2
+                id="h-mes"
+                className="text-lg font-semibold text-[var(--text)]"
+              >
+                {mes}
+              </h2>
+              <Enlace href="/reportes">Reportes</Enlace>
+            </div>
+
+            {sinMovimientos ? (
+              /*
+                El mes puede no tener actividad todavía, y tres ceros grandes se
+                leen como una aplicación rota. Se dice con palabras.
+              */
+              /*
+                Compacto a propósito. La versión anterior era una caja de tres
+                renglones ocupando exactamente el sitio donde van las tres
+                cifras, así que la ausencia de movimiento pesaba más que el
+                movimiento. Dos líneas dicen lo mismo: qué falta y por qué.
+              */
+              <p className="border-y border-[var(--border)] py-3 text-sm text-[var(--text-muted)]">
+                Sin movimientos registrados todavía.
+                {stats.tripsThisMonth > 0 && (
+                  <span className="mt-0.5 block">
+                    Hay {stats.tripsThisMonth}{" "}
+                    {stats.tripsThisMonth === 1
+                      ? "viaje con salida"
+                      : "viajes con salida"}{" "}
+                    en el mes, ninguno facturado ni con gastos cargados.
+                  </span>
+                )}
+              </p>
+            ) : (
+              /*
+                Reglas, no caja. En esta pantalla el rectángulo con borde
+                significa «lista de registros que se abren»: las alertas y los
+                viajes lo son. Tres cifras no lo son, y encajonarlas las hacía
+                parecer una cuarta lista.
+              */
+              <dl className="border-y border-[var(--border)]">
+                <Dinero
+                  rotulo="Entró"
+                  valor={money(stats.revenue)}
+                  nota={`${stats.tripsThisMonth} ${stats.tripsThisMonth === 1 ? "viaje" : "viajes"} con salida`}
+                />
+                <Dinero
+                  rotulo="Salió"
+                  valor={money(stats.expenses)}
+                  nota="Gastos y taller"
+                />
+                {/*
+                  El signo no depende del color: la palabra lo dice. Alguien que
+                  no distingue rojo de verde tiene que poder leer si el mes va
+                  bien, y en una hoja impresa en blanco y negro también.
+                */}
+                <Dinero
+                  rotulo="Resultado"
+                  valor={money(stats.profit)}
+                  nota={
+                    stats.profit > 0
+                      ? "Positivo"
+                      : stats.profit < 0
+                        ? "Negativo"
+                        : "En cero"
+                  }
+                  tono={
+                    stats.profit > 0
+                      ? "success"
+                      : stats.profit < 0
+                        ? "danger"
+                        : undefined
+                  }
+                  fuerte
+                />
+              </dl>
+            )}
+          </section>
+
+          {/* ===================== NIVEL 3 · CONTEXTO ========================== */}
+          {/*
+            Debajo del pliegue y con menos peso, que es donde corresponde: no se
+            decide nada con esto a primera hora, se entiende hacia dónde va la
+            operación. Misma serie y mismo cálculo que Reportes.
+          */}
+          <section aria-labelledby="h-serie">
+            <h2 id="h-serie" className="text-lg font-semibold text-[var(--text)]">
+              Últimos 6 meses
+            </h2>
+            <p className="mb-4 mt-1 max-w-prose text-sm text-[var(--text-muted)]">
+              Lo facturado en viajes contra lo gastado en gastos y taller, mes a
+              mes, en toda la flota.
             </p>
-          </div>
-        ) : (
-          <dl className="grid grid-cols-1 gap-x-8 sm:grid-cols-3">
-            <Cifra
-              rotulo="Entró"
-              valor={money(stats.revenue, true)}
-              nota={`${stats.tripsThisMonth} ${stats.tripsThisMonth === 1 ? "viaje" : "viajes"} con salida en el mes`}
-            />
-            <Cifra
-              rotulo="Salió"
-              valor={money(stats.expenses, true)}
-              nota="Gastos y taller"
-            />
-            <Cifra
-              rotulo="Resultado"
-              valor={money(stats.profit, true)}
-              nota="Lo que quedó"
-              tono={stats.profit >= 0 ? "success" : "danger"}
-            />
-          </dl>
-        )}
-
-        {/*
-          La única gráfica del Panel, y responde una pregunta concreta: si la
-          flota entera está cubriendo lo que cuesta y hacia dónde va. Es la
-          misma serie y el mismo cálculo que usa Reportes.
-        */}
-        <div className="mt-6 border-t border-[var(--border)] pt-4">
-          <h3 className="mb-1 font-semibold">Últimos 6 meses</h3>
-          <p className="mb-3 text-sm text-[var(--text-muted)]">
-            Lo facturado en viajes contra lo gastado en gastos y taller, mes a
-            mes, en toda la flota.
-          </p>
-          <RevenueChart data={serie} alto="h-56 sm:h-72" />
+            <RevenueChart data={serie} alto="h-56 sm:h-72" />
+          </section>
         </div>
-      </Section>
+      </div>
+
     </>
   );
 }
 
-/** Una cifra de situación: rótulo, número y una nota que dice qué mide. */
-function Cifra({
+/* ------------------------------------------------------------------ piezas */
+
+/** Un número del triaje: cuántos hay de esta gravedad y qué significa. */
+function Triaje({
+  valor,
+  rotulo,
+  nota,
+  tono,
+}: {
+  valor: number;
+  rotulo: string;
+  nota: string;
+  tono: "danger" | "warning";
+}) {
+  /*
+    El cero se apaga. Un «0 Vencido» con el mismo rojo que un «3 Vencido»
+    obliga a leer el número para saber si hay problema; apagado, la vista salta
+    directo a lo que sí tiene cuenta.
+  */
+  const activo = valor > 0;
+  return (
+    /*
+      Cuatro columnas separadas por una línea, no cuatro tarjetas. Con borde,
+      fondo y sombra cada una, esto se convertía en la grilla de tarjetas
+      clonadas que el resto del producto evita; con un divisor vertical dice lo
+      mismo ocupando la mitad y sin competir con la lista que viene debajo.
+    */
+    <div className="border-l border-[var(--border)] py-3 pl-4 pr-3 odd:border-l-0 odd:pl-0 sm:odd:border-l sm:odd:pl-5 sm:first:border-l-0 sm:first:pl-0 lg:odd:border-l-0 lg:odd:pl-0 xl:odd:border-l xl:odd:pl-5 xl:first:border-l-0 xl:first:pl-0">
+      <dd
+        className="font-mono text-2xl font-semibold tabular-nums"
+        style={{
+          color: activo ? `var(--tone-${tono}-fg)` : "var(--text-muted)",
+        }}
+      >
+        {valor}
+      </dd>
+      <dt className="mt-0.5 text-sm font-medium text-[var(--text)]">
+        {rotulo}
+      </dt>
+      <dd className="text-sm text-[var(--text-muted)]">{nota}</dd>
+    </div>
+  );
+}
+
+/** Encabezado de grupo dentro de la lista de atención. */
+function Grupo({
+  titulo,
+  n,
+  tono,
+}: {
+  titulo: string;
+  n: number;
+  tono: "danger" | "warning";
+}) {
+  if (n === 0) return null;
+  return (
+    <li className="flex items-baseline justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface-2)] px-4 py-1.5">
+      <span
+        className="text-sm font-semibold"
+        style={{ color: `var(--tone-${tono}-fg)` }}
+      >
+        {titulo}
+      </span>
+      <span className="font-mono text-sm tabular-nums text-[var(--text-muted)]">
+        {n}
+      </span>
+    </li>
+  );
+}
+
+/** Una alerta: qué pasó, a qué activo, cuánto falta y a dónde se va a resolver. */
+function FilaAlerta({
+  alerta,
+  sujeto,
+}: {
+  alerta: Alert;
+  sujeto: { tipo: "vehiculo"; placa?: string } | { tipo: "conductor"; nombre?: string } | null;
+}) {
+  return (
+    <RecordRow
+      href={alerta.href}
+      /*
+        El tipo va en el título y el sujeto baja a la línea de metadatos. Con
+        los dos juntos, a 390px la fila se rompía en cuatro renglones: tipo,
+        placa, insignia y plazo peleando por el mismo ancho.
+      */
+      titulo={alerta.title.split(" — ")[0]}
+      estado={
+        <Badge tone={ALERT_TONE[alerta.level]} variant="quiet">
+          {ALERT_LABEL[alerta.level]}
+        </Badge>
+      }
+      meta={
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          {sujeto?.tipo === "vehiculo" && sujeto.placa && (
+            <Plate value={sujeto.placa} size="sm" framed={false} />
+          )}
+          {sujeto?.tipo === "conductor" && sujeto.nombre && (
+            <span className="font-medium text-[var(--text)]">
+              {sujeto.nombre}
+            </span>
+          )}
+          <span>· {alerta.detail}</span>
+          {/*
+            En pantalla angosta el plazo viaja en esta línea. Como columna a la
+            derecha dejaba al contenido sin ancho y la fila se partía en cuatro
+            renglones. Desde 640px vuelve a la derecha, que es donde permite
+            comparar urgencias bajando la vista.
+          */}
+          <span className="sm:hidden">· {relativeDays(alerta.days)}</span>
+        </span>
+      }
+      cifra={
+        <span className="hidden sm:inline">{relativeDays(alerta.days)}</span>
+      }
+    />
+  );
+}
+
+/** Una línea de dinero: rótulo a la izquierda, cifra a la derecha. */
+function Dinero({
   rotulo,
   valor,
   nota,
   tono,
-  alerta = false,
+  fuerte = false,
 }: {
   rotulo: string;
   valor: string;
-  nota?: string;
+  nota: string;
   tono?: "success" | "danger";
-  /** Resalta el número cuando no ser cero es una excepción operacional. */
-  alerta?: boolean;
+  /** El resultado pesa más que sus dos sumandos. */
+  fuerte?: boolean;
 }) {
-  const color = tono
-    ? `var(--tone-${tono}-fg)`
-    : alerta
-      ? "var(--tone-warning-fg)"
-      : undefined;
   return (
-    <div className="border-b border-[var(--border)] py-3">
-      <dt className="text-sm text-[var(--text-muted)]">{rotulo}</dt>
+    <div className="flex items-baseline justify-between gap-4 border-b border-[var(--border)] py-3 last:border-b-0">
+      <dt className="min-w-0">
+        <span
+          className={`block ${fuerte ? "font-semibold text-[var(--text)]" : "text-[var(--text)]"}`}
+        >
+          {rotulo}
+        </span>
+        <span className="block text-sm text-[var(--text-muted)]">{nota}</span>
+      </dt>
       <dd
-        className="font-mono text-xl font-semibold tabular-nums"
-        style={color ? { color } : undefined}
+        className={`shrink-0 font-mono tabular-nums ${fuerte ? "text-xl font-semibold" : "text-lg font-medium"}`}
+        style={tono ? { color: `var(--tone-${tono}-fg)` } : undefined}
       >
         {valor}
       </dd>
-      {nota && <dd className="text-sm text-[var(--text-muted)]">{nota}</dd>}
     </div>
   );
 }
@@ -537,7 +711,7 @@ function Enlace({
   return (
     <Link
       href={href}
-      className="inline-flex min-h-11 items-center rounded-[var(--r-control)] font-medium underline decoration-[var(--border-control)] decoration-2 underline-offset-4 transition-colors hover:decoration-[var(--accent)] focus-ring"
+      className="inline-flex min-h-11 items-center rounded-[var(--r-control)] text-sm font-medium underline decoration-[var(--border-control)] decoration-2 underline-offset-4 transition-colors hover:decoration-[var(--accent)] focus-ring"
     >
       {children}
     </Link>

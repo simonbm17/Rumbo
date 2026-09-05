@@ -38,6 +38,7 @@ export function FleetStatusBar({
   basePath,
   queryString,
   etiquetaAlertas = (n) => (n === 1 ? "con alerta" : "con alertas"),
+  className = "mb-4 sm:mb-6",
 }: {
   conteos: ConteoEstado[];
   /** Vehículos con documento vencido o mantenimiento próximo. */
@@ -54,6 +55,13 @@ export function FleetStatusBar({
     contradicción. Acá la unidad son VEHÍCULOS; allá, situaciones.
   */
   etiquetaAlertas?: (n: number) => string;
+  /*
+    Separación exterior. Existe porque en el Panel la franja va DENTRO de una
+    fila junto al total de la flota, y ahí el margen inferior de Vehículos
+    desalinea las dos mitades. El valor por defecto es exactamente el que tenía
+    escrito, así que Vehículos no cambia: es un añadido, no una modificación.
+  */
+  className?: string;
 }) {
   const total = conteos.reduce((acc, c) => acc + c.total, 0);
   if (total === 0) return null;
@@ -74,7 +82,7 @@ export function FleetStatusBar({
   }
 
   return (
-    <div className="mb-4 sm:mb-6">
+    <div className={className}>
       {/* Reparto proporcional. Decorativo para el lector de pantalla: los
           números de abajo dicen exactamente lo mismo. */}
       <div
