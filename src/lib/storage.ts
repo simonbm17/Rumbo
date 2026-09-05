@@ -16,6 +16,22 @@ import path from "node:path";
 
 const UPLOAD_ROOT = path.join(process.cwd(), "public", "uploads");
 
+/**
+ * El directorio donde viven los archivos subidos.
+ *
+ * Se expone porque quien los ESCRIBE (este módulo) y quien los SIRVE
+ * (`app/uploads/[...ruta]/route.ts`) tienen que apuntar exactamente al mismo
+ * sitio. Con la ruta escrita dos veces, montar el volumen en producción en uno
+ * solo de los dos daría un sistema que guarda archivos donde nadie los lee.
+ *
+ * Es una función y no la constante a secas para que quede claro que depende de
+ * `process.cwd()`, que es lo que hay que medir en el contenedor antes de
+ * decidir dónde se monta el volumen.
+ */
+export function getUploadsDir() {
+  return UPLOAD_ROOT;
+}
+
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
 const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
 

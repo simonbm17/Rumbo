@@ -86,29 +86,35 @@ Railway suele ser `/app`, con lo que el montaje sería **`/app/public/uploads`**
 **Confírmalo en el contenedor real antes de crear el volumen**: si `cwd` fuera
 otro, el volumen quedaría montado donde no escribe nadie.
 
-### Y hay algo más, medido y verificado
+### El defecto que había, y cómo quedó resuelto
 
 `next start` compone la lista de archivos de `public/` **al arrancar**, no en
-cada petición. Comprobado en un build de producción local:
+cada petición. Medido en un build de producción local:
 
-| archivo | resultado |
-|---|---|
-| existía al arrancar el servidor | **HTTP 200** |
-| escrito con el servidor ya en marcha | **HTTP 404** |
-| el mismo, tras reiniciar el proceso | **HTTP 200** |
+| archivo | antes | ahora |
+|---|---|---|
+| existía al arrancar el servidor | 200 | 200 |
+| escrito con el servidor ya en marcha | **404** | **200** |
+| el mismo, tras reiniciar el proceso | 200 | 200 |
 
-Es decir: **un volumen persistente conserva el archivo, pero no basta para que
-se vea.** Tras subir una foto, la imagen dará 404 hasta que el proceso se
-reinicie. Los vehículos se muestran con `<img src={photoUrl}>` directo, así que
-esto afecta a la pantalla que más se usa.
+Es decir: un volumen persistente conservaba el archivo pero no bastaba para que
+se viera. Subir una foto la dejaba invisible hasta el siguiente reinicio, y los
+vehículos se muestran con `<img src={photoUrl}>` directo.
 
-**Esto no está resuelto.** Antes de que el cliente cargue fotos hay que decidir
-entre:
+Lo resuelve **`src/app/uploads/[...ruta]/route.ts`**, que lee del disco en cada
+petición. Next sigue sirviendo por la vía estática lo que ya conocía y cae en el
+manejador con todo lo demás; las dos vías leen el mismo directorio
+(`getUploadsDir()`), así que desde fuera no se nota la diferencia.
 
-1. servir `/uploads` fuera de `public/` mediante un manejador de ruta que lea
-   del disco en cada petición;
-2. mover el almacenamiento a un bucket de objetos.
+Las URL no cambian: siguen siendo `/uploads/<carpeta>/<uuid>.<ext>` y no hizo
+falta tocar la base.
 
-La opción 1 es pequeña y no cambia la arquitectura; la 2 es la que el propio
-`storage.ts` anticipa. Mientras tanto, un volumen persistente sigue siendo
-necesario —sin él el archivo ni siquiera sobrevive—, pero no es suficiente.
+Sirve solo lo que el sistema es capaz de guardar —JPG, PNG, WebP, AVIF y PDF—,
+no lista directorios, y cualquier intento de salirse del directorio devuelve el
+mismo 404 que un archivo inexistente. `tests/unit/uploads-route.test.ts` fija
+ese contrato.
+
+### El volumen sigue haciendo falta
+
+El manejador resuelve que el archivo **se vea**; el volumen resuelve que
+**sobreviva** a un redespliegue. Son dos cosas distintas y hacen falta las dos.
