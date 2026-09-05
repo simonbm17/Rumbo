@@ -17,7 +17,7 @@ const url = process.env.DATABASE_URL ?? "";
 if (!/\/rumbo_test(\?|$)/.test(url)) {
   throw new Error(
     `Las pruebas apuntan a una base que no es de pruebas: ${url}\n` +
-      "Se esperaba una base llamada `rumbo_test`. Revisá .env.test."
+      "Se esperaba una base llamada `rumbo_test`. Revisa .env.test."
   );
 }
 

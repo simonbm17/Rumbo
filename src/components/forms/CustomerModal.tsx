@@ -37,7 +37,7 @@ export function CustomerModal({ values }: { values?: CustomerValues }) {
         size: editing ? "sm" : "md",
       }}
       title={editing ? "Editar cliente" : "Agregar cliente"}
-      description="Las empresas para las que transportás carga."
+      description="Las empresas para las que transportas carga."
     >
       {(close) => (
         <ModalForm action={action} close={close}>

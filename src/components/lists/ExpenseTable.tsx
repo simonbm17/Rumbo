@@ -42,7 +42,7 @@ export function ExpenseTable({
       <EmptyState
         icon={<Banknote className="size-5" />}
         title="Sin gastos"
-        description="Cargá combustible, peajes y viáticos para conocer el costo real de la operación."
+        description="Carga combustible, peajes y viáticos para conocer el costo real de la operación."
         action={action}
       />
     );

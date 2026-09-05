@@ -72,7 +72,7 @@ export function MaintenanceModal({
                 disabled={Boolean(defaultTruckId)}
               >
                 <option value="" disabled>
-                  Elegí un camión
+                  Elige un camión
                 </option>
                 {trucks.map((t) => (
                   <option key={t.id} value={t.id}>

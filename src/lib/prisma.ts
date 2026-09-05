@@ -9,7 +9,7 @@ function createClient() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
     throw new Error(
-      "Falta la variable DATABASE_URL. Copiá .env.example a .env y configurá la conexión."
+      "Falta la variable DATABASE_URL. Copia .env.example a .env y configura la conexión."
     );
   }
   return new PrismaClient({

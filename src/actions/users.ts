@@ -89,7 +89,7 @@ export async function updateUser(
       if (admins <= 1) {
         return {
           error:
-            "Sos el único administrador activo. Asigná ese rol a otra persona antes de cambiar el tuyo.",
+            "Eres el único administrador activo. Asigna ese rol a otra persona antes de cambiar el tuyo.",
         };
       }
     }
@@ -128,7 +128,7 @@ export async function toggleUserActive(formData: FormData) {
 
   if (!active) {
     if (userId === admin.id) {
-      throw new Error("No podés desactivar tu propia cuenta.");
+      throw new Error("No puedes desactivar tu propia cuenta.");
     }
     const admins = await prisma.user.count({
       where: { role: "ADMIN", active: true },
@@ -163,7 +163,7 @@ export async function deleteUser(formData: FormData) {
   const userId = String(formData.get("id"));
 
   if (userId === admin.id) {
-    throw new Error("No podés eliminar tu propia cuenta.");
+    throw new Error("No puedes eliminar tu propia cuenta.");
   }
 
   const user = await prisma.user.delete({ where: { id: userId } });

@@ -21,7 +21,7 @@ export default async function NewTruckPage() {
     <div className="mx-auto max-w-4xl">
       <PageHeader
         title="Agregar camión"
-        description="Cargá la foto, la placa y los datos del vehículo."
+        description="Carga la foto, la placa y los datos del vehículo."
         breadcrumbs={[
           { label: "Camiones", href: "/camiones" },
           { label: "Agregar" },

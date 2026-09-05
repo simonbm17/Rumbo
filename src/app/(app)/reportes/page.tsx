@@ -290,7 +290,7 @@ export default async function ReportsPage({
 
       <p className="mt-4 flex items-center gap-1.5 text-sm text-[var(--text-muted)] no-print">
         <Printer className="size-3.5" />
-        Usá «Imprimir» para generar un PDF del reporte con el diálogo del
+        Usa «Imprimir» para generar un PDF del reporte con el diálogo del
         navegador.
       </p>
     </>

@@ -34,7 +34,7 @@ export function UserModal({ values }: { values?: UserValues }) {
         size: editing ? "sm" : "md",
       }}
       title={editing ? "Editar usuario" : "Nuevo usuario"}
-      description="Definí qué puede hacer cada persona dentro del sistema."
+      description="Define qué puede hacer cada persona dentro del sistema."
     >
       {(close) => (
         <ModalForm action={action} close={close}>

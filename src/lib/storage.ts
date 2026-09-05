@@ -87,8 +87,8 @@ export async function saveUpload(
   if (!ext) {
     throw new UploadError(
       kind === "image"
-        ? "Formato de imagen no admitido. Usá JPG, PNG, WebP o AVIF."
-        : "Formato no admitido. Usá PDF o una imagen (JPG, PNG, WebP)."
+        ? "Formato de imagen no admitido. Usa JPG, PNG, WebP o AVIF."
+        : "Formato no admitido. Usa PDF o una imagen (JPG, PNG, WebP)."
     );
   }
   if (file.size > maxBytes) {
@@ -103,7 +103,7 @@ export async function saveUpload(
   if (!firmaCoincide(ext, buffer)) {
     throw new UploadError(
       kind === "image"
-        ? "El archivo no es una imagen válida. Subí un JPG, PNG, WebP o AVIF real."
+        ? "El archivo no es una imagen válida. Sube un JPG, PNG, WebP o AVIF real."
         : "El archivo no es un PDF ni una imagen válida."
     );
   }

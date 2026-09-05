@@ -13,7 +13,7 @@ vi.mock("@/lib/auth", async (importOriginal) => {
     requireUser: async () => sesionActual(),
     requireWriter: async () => {
       const u = sesionActual();
-      if (!real.canWrite(u)) throw new Error("No tenés permisos para realizar esta acción.");
+      if (!real.canWrite(u)) throw new Error("No tienes permisos para realizar esta acción.");
       return u;
     },
     requireAdmin: async () => {

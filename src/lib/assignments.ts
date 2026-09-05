@@ -260,7 +260,7 @@ export async function transferirConductor(datos: DatosAsignacion) {
     if (!origen) {
       throw new AssignmentError(
         "CONDUCTOR_SIN_ASIGNACION",
-        "Esta persona no está asignada a ningún vehículo, así que no hay nada que transferir. Usá «asignar» en su lugar."
+        "Esta persona no está asignada a ningún vehículo, así que no hay nada que transferir. Usa «asignar» en su lugar."
       );
     }
     if (origen.truckId === truckId) {

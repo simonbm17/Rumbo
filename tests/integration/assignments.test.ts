@@ -344,7 +344,7 @@ describe("traducción de los errores al español", () => {
       throw new Error("debió fallar");
     } catch (e) {
       expect(toActionError(e)).toBe(
-        "Este vehículo ya tiene un conductor asignado. Cerrá esa asignación antes de crear una nueva."
+        "Este vehículo ya tiene un conductor asignado. Cierra esa asignación antes de crear una nueva."
       );
     }
   });

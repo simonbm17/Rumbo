@@ -294,7 +294,7 @@ export default async function TripDetailPage({
           <EmptyState
             icon={<Package className="size-5" />}
             title="Sin cargas registradas"
-            description="Agregá la mercancía que transporta este viaje."
+            description="Agrega la mercancía que transporta este viaje."
             action={
               editable && <CargoModal tripId={trip.id} customers={customers} />
             }

@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Logo } from "./Logo";
+import { Logo } from "@/components/brand/Logo";
 import { ALERTAS, ATENCION, SITUACION, VIAJES } from "@/lib/landing-demo";
 
 /**

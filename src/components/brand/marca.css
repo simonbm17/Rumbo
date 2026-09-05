@@ -1,0 +1,54 @@
+/*
+  IDENTIDAD PÚBLICA DE RUMBO.
+
+  Los diez valores que la portada y el acceso comparten LITERALMENTE, y nada
+  más. Antes estaban escritos dos veces —`.lp` en `landing.css` y `.lg` en
+  `login.css`— con los mismos hexadecimales; dos copias del mismo color es dos
+  sitios donde se desincroniza.
+
+  ── POR QUÉ UNA CLASE Y NO `:root` ──────────────────────────────────────────
+
+  Porque estos tokens NO son del producto. La aplicación interna tiene su propio
+  sistema en `globals.css` —tinta, petróleo, cuatro familias semánticas— y no
+  debe heredar la paleta pública ni por accidente. Colgados de `.marca`, llegan
+  exactamente a quien se declara superficie de marca y a nadie más.
+
+  ── QUÉ NO ENTRA ACÁ ────────────────────────────────────────────────────────
+
+  Nada que sea de UNA superficie. El espaciado del hero, las sombras del
+  escenario de producto, la geometría del panel de acceso, el movimiento de
+  cualquiera de las dos y los radios de componente se quedan donde se usan.
+  Esto es identidad compartida, no un sistema de diseño: si un valor lo usa una
+  sola pantalla, no es de acá.
+*/
+
+.marca {
+  /* Azul marino de marca. */
+  --navy: #071f4b;
+
+  /*
+    Dos naranjas, y la razón.
+
+    `--naranja` es el color de marca y vive en superficies y grafismo. Para
+    TEXTO sobre blanco no sirve: medido, #ff5a00 sobre blanco da 3,13:1 y no
+    llega a AA de cuerpo. `--naranja-texto` da 4,94:1 y a simple vista es el
+    mismo naranja.
+  */
+  --naranja: #ff5a00;
+  --naranja-texto: #c74400;
+
+  --tinta: #0b1730;
+  --gris: #55647d;
+  --linea: #e2e7ef;
+  --blanco: #ffffff;
+
+  /*
+    Texto sobre azul marino, en colores SÓLIDOS y no blancos con alfa. Sobre un
+    degradado o sobre una superficie con luz, el alfa da un contraste distinto
+    en cada punto y deja de poder auditarse. Estos tres están calculados contra
+    el punto más claro de cada superficie, que es el caso peor.
+  */
+  --sobre-navy-1: #ffffff;
+  --sobre-navy-2: #c9d5ea;
+  --sobre-navy-3: #a3b4d2;
+}

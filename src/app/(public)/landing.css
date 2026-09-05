@@ -26,51 +26,24 @@
 
 .lp {
   /* ------------------------------------------------------------ color -- */
-  --navy: #071f4b;
-  --navy-2: #08265a;
-  --navy-3: #0c3272;
-  --azul: #1f5ba8;
-
   /*
-    Dos naranjas, y la razón.
+    El azul marino, los dos naranjas, la tinta, el gris, la línea, el blanco y
+    los tres tonos sobre marino NO se declaran acá: son identidad compartida con
+    el acceso y viven en `components/brand/marca.css`. El elemento raíz de la
+    portada lleva la clase `marca` y los hereda.
 
-    `--naranja` es el color de marca y vive en superficies y grafismo: el arco,
-    los iconos, la franja de cierre, las barras. `--naranja-texto` es para TEXTO
-    sobre blanco y para fondos con texto blanco encima: medido, #ff5a00 sobre
-    blanco da 3,13:1 y no llega a AA para cuerpo. #c74400 da 4,94:1 y sigue
-    siendo el mismo naranja a simple vista.
+    Acá solo queda lo que es de ESTA superficie.
   */
-  --naranja: #ff5a00;
-  --naranja-texto: #c74400;
 
-  --tinta: #0b1730;
-  --gris: #55647d;
+  /* El gris de las marcas de terceros. Lo usa `PartnersStrip`. */
   --gris-2: #7a8799;
-  --linea: #e2e7ef;
 
   /*
-    Tres blancos, no uno.
-
-    Una portada entera a #ffffff plano se aplana: sin cambio de superficie, el
-    lector no percibe dónde termina un tema y empieza otro. Estos tres se
-    alternan sección a sección y ninguno se nota por sí mismo.
+    El segundo blanco frío. Una portada entera a #ffffff plano se aplana: sin
+    cambio de superficie, el lector no percibe dónde termina un tema y empieza
+    otro. Se alterna sección a sección y no se nota por sí mismo.
   */
-  --blanco: #ffffff;
-  --frio-1: #f8fafc;
   --frio-2: #f3f6fa;
-
-  /*
-    Texto sobre azul marino, en colores SÓLIDOS.
-
-    Antes eran blancos con alfa (`text-white/70`). Sobre un degradado el alfa da
-    un contraste distinto en cada punto de la superficie, así que no se puede
-    auditar: medido, ni siquiera se puede leer el color efectivo. Estos tres
-    están calculados contra el tono más claro del degradado (#0c3272), que es el
-    caso peor: 12,25:1 / 8,27:1 / 5,84:1.
-  */
-  --sobre-navy-1: #ffffff;
-  --sobre-navy-2: #c9d5ea;
-  --sobre-navy-3: #a3b4d2;
 
   /* -------------------------------------------------------- espaciado -- */
   /*
@@ -183,7 +156,7 @@
   pasa a ser esfuerzo, y esta portada la lee gente que no quiere esforzarse.
 */
 .lp-h1 {
-  font-family: var(--lp-display), "Arial Narrow", system-ui, sans-serif;
+  font-family: var(--marca-display), "Arial Narrow", system-ui, sans-serif;
   font-weight: 700;
   /*
     6,8vw y no 6,5. Medido, con 6,5vw el titular caía en 49px a 768 y el encargo
@@ -217,7 +190,7 @@
 }
 
 .lp-h2 {
-  font-family: var(--lp-display), "Arial Narrow", system-ui, sans-serif;
+  font-family: var(--marca-display), "Arial Narrow", system-ui, sans-serif;
   font-weight: 700;
   font-size: clamp(2rem, 4.2vw, 3.75rem);
   line-height: 0.96;
@@ -228,7 +201,7 @@
 
 /* Línea de display en cuerpo de texto: grande, pero no un titular de sección. */
 .lp-display {
-  font-family: var(--lp-display), "Arial Narrow", system-ui, sans-serif;
+  font-family: var(--marca-display), "Arial Narrow", system-ui, sans-serif;
   font-weight: 700;
   font-size: clamp(1.5rem, 2.6vw, 2.25rem);
   line-height: 1;

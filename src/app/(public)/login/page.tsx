@@ -4,9 +4,8 @@ import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getSession } from "@/lib/auth";
 import { getCompanySettings } from "@/lib/settings";
-import { Logo } from "@/components/landing/Logo";
+import { Logo } from "@/components/brand/Logo";
 import { LoginForm } from "./LoginForm";
-import { displayAcceso } from "./fuente";
 
 import "./login.css";
 
@@ -50,7 +49,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const anio = new Date().getFullYear();
 
   return (
-    <div className={`lg ${displayAcceso.variable}`}>
+    <div className="lg marca">
       <div className="lg-reja">
         {/* ---------------------------- marca ---------------------- */}
         <section className="lg-marca" aria-label="Rumbo">

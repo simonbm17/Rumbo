@@ -21,7 +21,7 @@ export function PasswordForm() {
       <Card>
         <CardHeader
           title="Cambiar mi contraseña"
-          description="Al guardarla se cierra la sesión y tenés que volver a ingresar."
+          description="Al guardarla se cierra la sesión y tienes que volver a ingresar."
         />
         <CardBody className="flex flex-col gap-4">
           <FormError message={state?.error} />

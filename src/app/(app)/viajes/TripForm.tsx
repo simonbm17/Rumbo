@@ -64,7 +64,7 @@ export function TripForm({
                 defaultValue={values?.truckId ?? defaultTruckId ?? ""}
               >
                 <option value="" disabled>
-                  Elegí un camión
+                  Elige un camión
                 </option>
                 {trucks.map((t) => (
                   <option key={t.id} value={t.id}>
@@ -147,7 +147,7 @@ export function TripForm({
       <Card>
         <CardHeader
           title="Tiempos y recorrido"
-          description="La distancia se calcula sola si cargás los dos odómetros."
+          description="La distancia se calcula sola si cargas los dos odómetros."
         />
         <CardBody>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -204,7 +204,7 @@ export function TripForm({
             <Field
               label="Distancia recorrida"
               htmlFor="t-distance"
-              hint="En kilómetros. Opcional si cargás los odómetros."
+              hint="En kilómetros. Opcional si cargas los odómetros."
             >
               <Input
                 id="t-distance"

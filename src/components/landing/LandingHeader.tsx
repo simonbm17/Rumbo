@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Logo } from "./Logo";
+import { Logo } from "@/components/brand/Logo";
 
 /**
  * Cabecera pública: blanca, sin caja, una sola regla abajo.

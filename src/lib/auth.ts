@@ -21,7 +21,7 @@ function secretKey() {
   const secret = process.env.AUTH_SECRET;
   if (!secret || secret.length < 32) {
     throw new Error(
-      "AUTH_SECRET debe existir y tener al menos 32 caracteres. Generá una con: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\""
+      "AUTH_SECRET debe existir y tener al menos 32 caracteres. Genera una con: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\""
     );
   }
   return new TextEncoder().encode(secret);
@@ -120,7 +120,7 @@ export function canAdmin(user: { role: Role }) {
 export async function requireWriter(): Promise<SessionUser> {
   const user = await requireUser();
   if (!canWrite(user)) {
-    throw new Error("No tenés permisos para realizar esta acción.");
+    throw new Error("No tienes permisos para realizar esta acción.");
   }
   return user;
 }

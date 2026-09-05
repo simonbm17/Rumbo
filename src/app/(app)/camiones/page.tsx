@@ -154,7 +154,7 @@ export default async function VehiclesPage({
         description={
           showArchived
             ? "Fuera de la flota activa. Su historial se conserva completo."
-            : "Tu flota. Tocá un vehículo para ver su ficha."
+            : "Tu flota. Toca un vehículo para ver su ficha."
         }
         actions={
           canWrite(user) && (
@@ -222,10 +222,10 @@ export default async function VehiclesPage({
             }
             description={
               filtrando
-                ? "Probá con otra placa, marca o conductor, o quitá los filtros."
+                ? "Prueba con otra placa, marca o conductor, o quita los filtros."
                 : showArchived
                   ? "Cuando saques un vehículo de la flota, lo vas a encontrar acá con todo su historial."
-                  : "Agregá el primero con su foto, su placa y sus datos técnicos."
+                  : "Agrega el primero con su foto, su placa y sus datos técnicos."
             }
             action={
               !filtrando &&

@@ -34,7 +34,7 @@ export default async function NewTripPage({
     <div className="mx-auto max-w-4xl">
       <PageHeader
         title="Nuevo viaje"
-        description="Registrá la ruta y luego agregá las cargas desde la ficha del viaje."
+        description="Registra la ruta y luego agrega las cargas desde la ficha del viaje."
         breadcrumbs={[{ label: "Viajes", href: "/viajes" }, { label: "Nuevo" }]}
       />
       <TripForm

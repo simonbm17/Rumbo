@@ -1,7 +1,7 @@
 import { Big_Shoulders } from "next/font/google";
 
 /**
- * LA TIPOGRAFÍA DE DISPLAY DE LA PORTADA. V4.
+ * LA CONDENSADA DE MARCA.
  *
  * Antes era Archivo Narrow: correcta, condensada, y completamente anónima.
  * Cualquier marca podía usarla y nadie la reconocería como de nadie.
@@ -17,19 +17,27 @@ import { Big_Shoulders } from "next/font/google";
  * condensada de señal frente a una humanista de instrumentación. Dos familias
  * que no se pueden confundir, que es la única razón válida para emparejar.
  *
+ * ── POR QUÉ VIVE ACÁ ────────────────────────────────────────────────────────
+ *
+ * La portada y el acceso la usan las dos, y antes cada una la declaraba por su
+ * cuenta —`components/landing/fuente.ts` y `app/login/fuente.ts`— con el mismo
+ * archivo y distinto nombre de variable. Dos declaraciones de la misma letra es
+ * dos sitios donde equivocarse. Vive en la capa de marca, con una sola variable
+ * (`--marca-display`), y la declara el layout público.
+ *
  * ── LO QUE SE CARGA Y LO QUE NO ─────────────────────────────────────────────
  *
  * Un solo peso (700) y un solo subconjunto (`latin`). El 700 es el único que
- * pintan `.lp-h1`, `.lp-h2` y las líneas de display; declarar más pesos hacía
- * que `next/font` precargara archivos que no dibuja nadie. Y `latin` ya trae
+ * pintan `.lp-h1`, `.lp-display` y `.lg-display`; declarar más pesos hacía que
+ * `next/font` precargara archivos que no dibuja nadie. Y `latin` ya trae
  * Á É Í Ó Ú Ñ ¿ ¡, que es todo lo que el español necesita: `latin-ext`
- * duplicaba el peso para cubrir alfabetos que esta página no escribe.
+ * duplicaba el peso para cubrir alfabetos que estas páginas no escriben.
  *
- * NO se declara en el layout raíz. `next/font` descarga la fuente EN LA RUTA
- * DONDE SE IMPORTA, así que la aplicación interna no paga por la portada.
+ * NO se declara en el layout de la aplicación interna: `next/font` descarga la
+ * fuente en las rutas donde se declara, así que el panel no paga por la marca.
  */
-export const displayCondensada = Big_Shoulders({
-  variable: "--lp-display",
+export const displayMarca = Big_Shoulders({
+  variable: "--marca-display",
   subsets: ["latin"],
   weight: ["700"],
   display: "swap",

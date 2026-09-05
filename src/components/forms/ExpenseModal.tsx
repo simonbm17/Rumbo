@@ -167,7 +167,7 @@ export function ExpenseModal({
                 <Field
                   label="Monto total"
                   htmlFor="e-amount"
-                  hint="Si lo dejás vacío, se calcula con litros × precio."
+                  hint="Si lo dejas vacío, se calcula con litros × precio."
                 >
                   <Input
                     id="e-amount"

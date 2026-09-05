@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 
 import "./landing.css";
 
-import { displayCondensada } from "@/components/landing/fuente";
 import { Reveal } from "@/components/landing/Reveal";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { Hero } from "@/components/landing/Hero";
@@ -42,7 +41,7 @@ export const metadata: Metadata = {
  */
 export default function Landing() {
   return (
-    <div className={`lp ${displayCondensada.variable}`}>
+    <div className="lp marca">
       <Reveal />
       {/*
         Centinela de la cabecera. 1px en el tope del documento: mientras se ve,

@@ -51,7 +51,7 @@ export function DocumentTable({
       <EmptyState
         icon={<FileWarning className="size-5" />}
         title="Sin documentos"
-        description="Cargá SOAT, tecnomecánica y pólizas para recibir avisos antes del vencimiento."
+        description="Carga SOAT, tecnomecánica y pólizas para recibir avisos antes del vencimiento."
         action={action}
       />
     );

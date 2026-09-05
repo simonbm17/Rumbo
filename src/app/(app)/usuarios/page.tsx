@@ -56,7 +56,7 @@ export default async function UsersPage() {
                       {user.name}
                       {isSelf && (
                         <span className="ml-2 text-sm text-[var(--text-muted)]">
-                          (vos)
+                          (tú)
                         </span>
                       )}
                     </p>

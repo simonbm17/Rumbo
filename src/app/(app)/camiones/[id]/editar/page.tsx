@@ -31,7 +31,7 @@ export default async function EditTruckPage({
     <div className="mx-auto max-w-4xl">
       <PageHeader
         title={`Editar ${truck.plate}`}
-        description="Actualizá los datos del vehículo."
+        description="Actualiza los datos del vehículo."
         breadcrumbs={[
           { label: "Camiones", href: "/camiones" },
           { label: truck.plate, href: `/camiones/${truck.id}` },

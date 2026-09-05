@@ -160,7 +160,7 @@ export function optEnumOf<T extends string>(
  */
 const MENSAJES_RESTRICCION: Record<string, string> = {
   asignacion_activa_unica_por_vehiculo:
-    "Este vehículo ya tiene un conductor asignado. Cerrá esa asignación antes de crear una nueva.",
+    "Este vehículo ya tiene un conductor asignado. Cierra esa asignación antes de crear una nueva.",
   asignacion_activa_unica_por_conductor:
     "Esta persona ya está asignada a otro vehículo. Liberala de ese vehículo o transferila a este.",
   chk_asignacion_cierre_coherente:
@@ -208,5 +208,5 @@ export function toActionError(error: unknown): string {
       return error.message;
   }
   console.error("Error en server action:", error);
-  return "Ocurrió un error al guardar. Revisá los datos e intentá de nuevo.";
+  return "Ocurrió un error al guardar. Revisa los datos e intenta de nuevo.";
 }

@@ -84,7 +84,7 @@ export function VehicleCard({ vehiculo }: { vehiculo: VehicleCardData }) {
               Sin fotografía
             </span>
             <span className="text-sm text-[var(--icon-muted)]">
-              {TRUCK_KIND[vehiculo.kind]} · abrí la ficha para agregarla
+              {TRUCK_KIND[vehiculo.kind]} · abre la ficha para agregarla
             </span>
           </div>
         )}

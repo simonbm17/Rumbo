@@ -167,10 +167,10 @@ export default async function DriversPage({
             }
             description={
               filtrando
-                ? "Probá con otro nombre o documento, o quitá los filtros."
+                ? "Prueba con otro nombre o documento, o quita los filtros."
                 : showArchived
                   ? "Cuando saques a alguien de la operación, lo vas a encontrar acá con todo su historial."
-                  : "Agregá a quienes conducen para poder asignarlos a un vehículo."
+                  : "Agrega a quienes conducen para poder asignarlos a un vehículo."
             }
             action={
               !filtrando &&

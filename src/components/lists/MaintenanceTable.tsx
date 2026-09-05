@@ -36,7 +36,7 @@ export function MaintenanceTable({
       <EmptyState
         icon={<Wrench className="size-5" />}
         title="Sin mantenimientos"
-        description="Registrá los servicios para llevar el historial y el costo del vehículo."
+        description="Registra los servicios para llevar el historial y el costo del vehículo."
         action={action}
       />
     );

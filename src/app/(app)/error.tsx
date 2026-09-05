@@ -30,7 +30,7 @@ export default function ErrorBoundary({
         <h1 className="text-xl font-semibold">Algo salió mal</h1>
         <p className="mt-1 max-w-md text-sm text-[var(--text-muted)]">
           {error.message ||
-            "No pudimos completar la operación. Probá de nuevo en unos segundos."}
+            "No pudimos completar la operación. Prueba de nuevo en unos segundos."}
         </p>
         {error.digest && (
           <p className="mt-2 font-mono text-sm text-[var(--text-muted)]">

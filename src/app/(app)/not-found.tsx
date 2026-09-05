@@ -11,7 +11,7 @@ export default function NotFound() {
       <div>
         <h1 className="text-xl font-semibold">No encontramos esa página</h1>
         <p className="mt-1 max-w-sm text-sm text-[var(--text-muted)]">
-          El registro que buscás pudo haberse eliminado o el enlace no es
+          El registro que buscas pudo haberse eliminado o el enlace no es
           correcto.
         </p>
       </div>

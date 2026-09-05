@@ -6,14 +6,13 @@
   (`landing.css`) se tocan: el primero es de otra superficie y el segundo está
   congelado.
 
-  ── POR QUÉ SE REPITEN LOS COLORES ──────────────────────────────────────────
+  ── DE DÓNDE SALE EL COLOR ──────────────────────────────────────────────────
 
-  El azul marino, los dos naranjas y los tres blancos son literalmente los
-  mismos valores que la portada. No se importan porque `landing.css` los declara
-  dentro de `.lp` y ese archivo no se modifica en esta fase. Queda anotado como
-  deuda: los tokens públicos de marca deberían vivir en un archivo compartido
-  del que bebieran portada y acceso. Duplicarlos acotado a una ruta y con el
-  motivo escrito es preferible a tocar una superficie ya cerrada.
+  El azul marino, los dos naranjas, la tinta, el gris, la línea, el blanco y los
+  tres tonos sobre marino son identidad compartida con la portada y viven en
+  `components/brand/marca.css`. El elemento raíz del acceso lleva la clase
+  `marca` y los hereda. Antes estaban copiados acá con los mismos
+  hexadecimales; eso era dos sitios donde el color se podía desincronizar.
 
   ── QUÉ REGISTRO ES ÉSTE ────────────────────────────────────────────────────
 
@@ -28,24 +27,18 @@
 */
 
 .lg {
-  --navy: #071f4b;
-  --naranja: #ff5a00;
-  --naranja-texto: #c74400;
-  --naranja-hover: #a83900;
-  --tinta: #0b1730;
-  --gris: #55647d;
-  --linea: #e2e7ef;
-  --blanco: #ffffff;
-  --frio: #f8fafc;
-
   /*
-    Texto sobre marino, en colores SÓLIDOS y no blancos con alfa: sobre una
-    superficie con luz, el alfa da un contraste distinto en cada punto y deja de
-    poder auditarse. Calculados contra el punto más claro del panel.
+    El marino, los naranjas, la tinta, el gris, la línea, el blanco y los tres
+    tonos sobre marino los hereda de `.marca`
+    (`components/brand/marca.css`), que es la identidad que el acceso comparte
+    con la portada. Acá solo queda lo propio del acceso.
   */
-  --sobre-navy-1: #ffffff;
-  --sobre-navy-2: #c9d5ea;
-  --sobre-navy-3: #a3b4d2;
+
+  /* El naranja pulsado del botón. La portada no tiene botón con este gesto. */
+  --naranja-hover: #a83900;
+
+  /* El blanco frío del campo deshabilitado. */
+  --frio: #f8fafc;
 
   --r-1: 6px;
   --r-2: 10px;
@@ -241,7 +234,7 @@
 
 .lg-display {
   margin-top: 0.75rem;
-  font-family: var(--lg-display), "Arial Narrow", system-ui, sans-serif;
+  font-family: var(--marca-display), "Arial Narrow", system-ui, sans-serif;
   font-weight: 700;
   font-size: clamp(2rem, 4.4vw, 3.5rem);
   line-height: 0.94;

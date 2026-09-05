@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { Logo } from "./Logo";
+import { Logo } from "@/components/brand/Logo";
 
 /**
  * PIE. V4.

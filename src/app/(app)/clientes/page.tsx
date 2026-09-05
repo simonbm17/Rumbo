@@ -62,7 +62,7 @@ export default async function CustomersPage({
     <>
       <PageHeader
         title={showArchived ? "Clientes archivados" : "Clientes"}
-        description="Las empresas para las que transportás carga."
+        description="Las empresas para las que transportas carga."
         actions={editable && <CustomerModal />}
       />
 
@@ -89,8 +89,8 @@ export default async function CustomersPage({
             title={q ? "Ningún cliente coincide" : "Todavía no hay clientes"}
             description={
               q
-                ? "Probá con otro nombre o quitá el filtro."
-                : "Agregá tus clientes para asociarlos a las cargas de cada viaje."
+                ? "Prueba con otro nombre o quita el filtro."
+                : "Agrega tus clientes para asociarlos a las cargas de cada viaje."
             }
             action={editable && !q && <CustomerModal />}
           />
@@ -184,7 +184,7 @@ export default async function CustomersPage({
 
       <p className="mt-3 text-sm text-[var(--text-muted)]">
         El monto facturado suma el flete asignado a cada carga del cliente. Si
-        cargás el flete solo a nivel de viaje, revisá el detalle en{" "}
+        cargas el flete solo a nivel de viaje, revisa el detalle en{" "}
         <Link
           href="/viajes"
           className="rounded text-[var(--brand)] underline decoration-2 underline-offset-4 decoration-[var(--border-control)] hover:decoration-[var(--brand)] focus-ring"

@@ -92,7 +92,7 @@ export function DocumentModal({
                 <Field
                   label="Conductor"
                   htmlFor="d-driver"
-                  hint="Elegí un camión o un conductor."
+                  hint="Elige un camión o un conductor."
                 >
                   <Select
                     id="d-driver"
