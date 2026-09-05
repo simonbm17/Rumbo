@@ -207,6 +207,52 @@ const CUSTOMERS = [
  * falla: un seed que genera datos inválidos es peor que uno que no corre,
  * porque el error aparece mucho después y lejos de su causa.
  */
+/**
+ * Deja los estados de camión y conductor coherentes con los viajes en curso.
+ *
+ * Es EXACTAMENTE la regla que aplica `syncFleetStatus` en `actions/trips.ts`
+ * cuando un viaje cambia de estado, no una regla nueva:
+ *
+ *   viaje en curso            -> camión IN_TRIP, conductor ON_TRIP
+ *   sin viaje en curso        -> si estaba IN_TRIP/ON_TRIP, vuelve a ACTIVE
+ *
+ * Lo que NO hace, igual que en producción: tocar un camión en taller o fuera de
+ * servicio, ni un conductor en descanso o inactivo. Esos estados los decide una
+ * persona y un viaje no los revoca.
+ *
+ * El seed escribe directo y no pasa por las acciones de servidor: aquéllas
+ * exigen sesión y permisos, que aquí no existen. Lo que sí respeta son las
+ * invariantes finales, que es lo que importa.
+ */
+async function sincronizarEstadosDeFlota() {
+  const enCurso = await prisma.trip.findMany({
+    where: { status: "IN_PROGRESS" },
+    select: { truckId: true, driverId: true },
+  });
+  const camionesEnRuta = [...new Set(enCurso.map((v) => v.truckId))];
+  const conductoresEnRuta = [
+    ...new Set(enCurso.map((v) => v.driverId).filter((id): id is string => !!id)),
+  ];
+
+  await prisma.truck.updateMany({
+    where: { id: { in: camionesEnRuta } },
+    data: { status: "IN_TRIP" },
+  });
+  await prisma.truck.updateMany({
+    where: { id: { notIn: camionesEnRuta }, status: "IN_TRIP" },
+    data: { status: "ACTIVE" },
+  });
+
+  await prisma.driver.updateMany({
+    where: { id: { in: conductoresEnRuta } },
+    data: { status: "ON_TRIP" },
+  });
+  await prisma.driver.updateMany({
+    where: { id: { notIn: conductoresEnRuta }, status: "ON_TRIP" },
+    data: { status: "ACTIVE" },
+  });
+}
+
 async function validarInvariantes() {
   const problemas: string[] = [];
 
@@ -246,6 +292,21 @@ async function validarInvariantes() {
   if (desajustes.length > 0) {
     problemas.push(
       `currentDriverId no coincide con la asignación vigente en: ${desajustes.map((d) => d.plate).join(", ")}`
+    );
+  }
+
+  const estadosIncoherentes = await prisma.$queryRaw<{ plate: string; detalle: string }[]>`
+    SELECT t."plate",
+           CASE WHEN t."status" = 'IN_TRIP' THEN 'marcado en viaje sin viaje en curso'
+                ELSE 'con viaje en curso pero no marcado en viaje' END AS detalle
+    FROM "Truck" t
+    WHERE (t."status" = 'IN_TRIP') <> EXISTS (
+      SELECT 1 FROM "Trip" v WHERE v."truckId" = t."id" AND v."status" = 'IN_PROGRESS'
+    )
+  `;
+  if (estadosIncoherentes.length > 0) {
+    problemas.push(
+      `Estado de vehículo incoherente con sus viajes: ${estadosIncoherentes.map((e) => `${e.plate} (${e.detalle})`).join(", ")}`
     );
   }
 
@@ -541,7 +602,7 @@ async function main() {
     // Aproximadamente un viaje cada 2,5 días.
     if (rnd() > 0.4) continue;
 
-    const truck = pick(trucks);
+    let truck = pick(trucks);
 
     /*
       El conductor del viaje sale de la asignación del vehículo, no de un
@@ -583,6 +644,28 @@ async function main() {
     if (offset > 2) status = "PLANNED";
     else if (offset > -durationDays - 1) status = "IN_PROGRESS";
     else status = rnd() < 0.05 ? "CANCELLED" : "COMPLETED";
+
+    /*
+      Un vehículo fuera de servicio o en taller no puede estar en ruta.
+
+      El estado del camión lo fija `TRUCKS` y el del viaje sale del desplazamiento
+      en el tiempo: dos decisiones independientes que coincidían por azar. De ahí
+      salía la demo contradictoria —un camión «Fuera de servicio» con un viaje en
+      curso— que no representa ninguna operación real.
+
+      El viaje se MUEVE a un vehículo operativo en vez de darse por terminado.
+      Degradarlo era la salida fácil y dejaba la demo sin ningún viaje en curso,
+      que es justo lo que la pantalla principal necesita enseñar. Solo si no
+      hubiera ningún vehículo disponible se cierra, que es el mismo recurso que
+      ya usa la comprobación del conductor unas líneas más abajo.
+    */
+    if (status === "IN_PROGRESS" && truck.status !== "ACTIVE" && truck.status !== "IN_TRIP") {
+      const operativo = trucks.find(
+        (c) => c.status === "ACTIVE" || c.status === "IN_TRIP"
+      );
+      if (operativo) truck = operativo;
+      else status = "COMPLETED";
+    }
 
     if (status === "IN_PROGRESS") {
       if (enViajeAhora.has(driver.id)) {
@@ -852,6 +935,9 @@ async function main() {
   // El seed falla si genera datos que la migración rechazaría. Sin esto, un
   // cambio futuro podría volver a producir en silencio el caso que dio origen
   // a todo esto: una persona asignada a dos vehículos a la vez.
+  console.log("Sincronizando estados de flota…");
+  await sincronizarEstadosDeFlota();
+
   console.log("Validando invariantes…");
   await validarInvariantes();
 
