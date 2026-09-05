@@ -1,6 +1,16 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { sesionActual } from "../helpers/session";
 
 vi.mock("next/cache", () => ({ revalidatePath: () => {}, revalidateTag: () => {} }));
+/*
+  `updateTruck` termina en `redirect()` y exige sesión de escritura. Se sustituye
+  solo la lectura de la cookie: las reglas de permiso siguen siendo las reales.
+*/
+vi.mock("@/lib/auth", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@/lib/auth")>();
+  return { ...real, requireWriter: async () => sesionActual() };
+});
+vi.mock("next/navigation", () => ({ redirect: () => {}, notFound: () => {} }));
 
 const {
   asignarConductor,
@@ -14,6 +24,7 @@ const {
   AssignmentError,
 } = await import("@/lib/assignments");
 const { toActionError } = await import("@/lib/form");
+const { updateTruck } = await import("@/actions/trucks");
 const { db, limpiarBase, cerrarBase } = await import("../helpers/db");
 const { crearUsuario, crearVehiculo, crearConductor } = await import(
   "../helpers/fixtures"
@@ -461,5 +472,102 @@ describe("concurrencia", () => {
     expect((await db.truck.findUniqueOrThrow({ where: { id: a.id } })).currentDriverId).toBe(c.id);
     expect(await db.driverAssignment.count()).toBe(1);
     await esperarConsistencia();
+  });
+});
+
+/**
+ * REGRESIÓN DEL DEFECTO DE INTEGRIDAD DE LA ASIGNACIÓN.
+ *
+ * El formulario del vehículo tiene un desplegable «Conductor asignado», y la
+ * acción escribía `Truck.currentDriverId` como una columna más. Reproducido en
+ * un navegador real: guardar el vehículo dejaba la proyección apuntando a una
+ * persona SIN crear ninguna `DriverAssignment`, de modo que el Panel —que
+ * pregunta a la fuente de verdad— seguía contando ese vehículo como «sin
+ * conductor»; y permitía dejar al mismo conductor proyectado en dos vehículos a
+ * la vez, algo que los índices únicos parciales impiden en `DriverAssignment`
+ * pero no pueden impedir en una columna suelta.
+ *
+ * Estas tres pruebas fijan el comportamiento correcto por las tres ramas de la
+ * acción: se eligió a alguien, se eligió a alguien ocupado, se quitó.
+ */
+function formularioVehiculo(conductorId: string | null) {
+  const fd = new FormData();
+  fd.set("plate", "REG-001");
+  fd.set("brand", "Kenworth");
+  fd.set("model", "T800");
+  fd.set("year", "2020");
+  fd.set("kind", "TRACTOMULA");
+  fd.set("status", "ACTIVE");
+  fd.set("odometerKm", "100000");
+  if (conductorId) fd.set("currentDriverId", conductorId);
+  return fd;
+}
+
+describe("asignar desde el formulario del vehículo", () => {
+  it("crea la asignación y no solo la proyección", async () => {
+    const vehiculo = await crearVehiculo({ plate: "REG-001" });
+    const conductor = await crearConductor();
+
+    await updateTruck(vehiculo.id, null, formularioVehiculo(conductor.id));
+
+    const vigente = await vigenteDeVehiculo(vehiculo.id);
+    expect(vigente).not.toBeNull();
+    expect(vigente!.driverId).toBe(conductor.id);
+    expect(vigente!.endedAt).toBeNull();
+
+    const truck = await db.truck.findUniqueOrThrow({ where: { id: vehiculo.id } });
+    expect(truck.currentDriverId).toBe(conductor.id);
+    expect(await verificarConsistencia()).toEqual([]);
+  });
+
+  it("rechaza a quien ya está en otro vehículo y no escribe nada", async () => {
+    const ocupado = await crearVehiculo({ plate: "OCU-001" });
+    const libre = await crearVehiculo({ plate: "REG-001" });
+    const conductor = await crearConductor();
+    await asignarConductor({
+      truckId: ocupado.id,
+      driverId: conductor.id,
+      startedAt: AYER,
+      usuarioId: "usuario-prueba",
+    });
+
+    const r = (await updateTruck(
+      libre.id,
+      null,
+      formularioVehiculo(conductor.id)
+    )) as { error?: string };
+
+    expect(r?.error).toContain("OCU-001");
+
+    // El vehículo libre sigue libre y la asignación original no se movió.
+    expect(await vigenteDeVehiculo(libre.id)).toBeNull();
+    const sigue = await vigenteDeVehiculo(ocupado.id);
+    expect(sigue!.driverId).toBe(conductor.id);
+    expect(await db.driverAssignment.count()).toBe(1);
+    expect(await verificarConsistencia()).toEqual([]);
+  });
+
+  it("quitar el conductor cierra la asignación vigente", async () => {
+    const vehiculo = await crearVehiculo({ plate: "REG-001" });
+    const conductor = await crearConductor();
+    await asignarConductor({
+      truckId: vehiculo.id,
+      driverId: conductor.id,
+      startedAt: AYER,
+      usuarioId: "usuario-prueba",
+    });
+
+    await updateTruck(vehiculo.id, null, formularioVehiculo(null));
+
+    expect(await vigenteDeVehiculo(vehiculo.id)).toBeNull();
+    // La fila no se borra: el historial conserva que existió.
+    const historial = await historialDeVehiculo(vehiculo.id);
+    expect(historial).toHaveLength(1);
+    expect(historial[0].endedAt).not.toBeNull();
+    expect(historial[0].endReason).toBe("RELEASED");
+
+    const truck = await db.truck.findUniqueOrThrow({ where: { id: vehiculo.id } });
+    expect(truck.currentDriverId).toBeNull();
+    expect(await verificarConsistencia()).toEqual([]);
   });
 });

@@ -5,7 +5,13 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireWriter } from "@/lib/auth";
 import { logActivity } from "@/lib/activity";
-import { cerrarPorArchivarVehiculo } from "@/lib/assignments";
+import {
+  asignarConductor,
+  cerrarPorArchivarVehiculo,
+  liberarVehiculo,
+  vigenteDeConductor,
+  vigenteDeVehiculo,
+} from "@/lib/assignments";
 import { deleteUpload, resolvePhotoField } from "@/lib/storage";
 import { TruckKind, TruckStatus } from "@/generated/prisma/enums";
 import {
@@ -39,9 +45,29 @@ function readForm(formData: FormData) {
     tankLiters: optAmount(formData, "tankLiters", "Capacidad del tanque"),
     purchaseDate: optDate(formData, "purchaseDate", "Fecha de compra"),
     purchasePrice: optAmount(formData, "purchasePrice", "Precio de compra"),
-    currentDriverId: optStr(formData, "currentDriverId"),
     notes: optStr(formData, "notes"),
   };
+}
+
+/*
+  EL CONDUCTOR NO ES UNA COLUMNA QUE SE ESCRIBA.
+
+  El desplegable del formulario se lee aparte, y a propósito. `readForm`
+  devuelve lo que se guarda con `prisma.truck.update`; el conductor NO va ahí.
+
+  Escribirlo como columna era un defecto real y reproducido: guardar el
+  vehículo ponía `Truck.currentDriverId` sin crear ninguna `DriverAssignment`,
+  de modo que el Panel —que pregunta a la fuente de verdad— seguía contando el
+  vehículo como «sin conductor» mientras la ficha mostraba a una persona. Peor:
+  permitía dejar al mismo conductor proyectado en dos vehículos a la vez, algo
+  que los índices únicos parciales de PostgreSQL impiden en `DriverAssignment`
+  pero no pueden impedir en una columna suelta.
+
+  La regla del proyecto es que solo `lib/assignments.ts` escribe la asignación y
+  su proyección, siempre en transacción. Acá se respeta llamándolo.
+*/
+function leerConductor(formData: FormData) {
+  return optStr(formData, "currentDriverId");
 }
 
 export async function createTruck(
@@ -57,12 +83,37 @@ export async function createTruck(
       return { error: "El año del vehículo no parece válido." };
     }
 
+    /*
+      Se comprueba ANTES de crear. Si se creara primero y la asignación fallara
+      después, quedaría un vehículo a medias y un mensaje de error sobre una
+      pantalla de creación: quien lo lea reintentaría y chocaría con la placa
+      duplicada. Preguntar primero cuesta una consulta y evita ese callejón.
+    */
+    const conductorId = leerConductor(formData);
+    if (conductorId) {
+      const enOtro = await vigenteDeConductor(conductorId);
+      if (enOtro) {
+        return {
+          error: `Esa persona ya está asignada al vehículo ${enOtro.truck.plate}. Libérala de ese vehículo antes de asignarla a este.`,
+        };
+      }
+    }
+
     const photoUrl = await resolvePhotoField(formData, "photo", "camiones", null);
 
     const truck = await prisma.truck.create({
       data: { ...data, photoUrl },
     });
     id = truck.id;
+
+    if (conductorId) {
+      await asignarConductor({
+        truckId: truck.id,
+        driverId: conductorId,
+        startedAt: new Date(),
+        usuarioId: user.id,
+      });
+    }
 
     await logActivity({
       userId: user.id,
@@ -105,6 +156,28 @@ export async function updateTruck(
       where: { id: truckId },
       data: { ...data, photoUrl },
     });
+
+    /*
+      Se concilia contra la asignación VIGENTE, no contra la proyección: la
+      proyección es justamente lo que no puede decidir nada. Tres casos y solo
+      tres: se eligió a alguien distinto —asignar, que cierra la anterior como
+      REASSIGNED y rechaza si esa persona está en otro vehículo—, se eligió «sin
+      asignar» —liberar—, o no cambió nada y no se toca la base.
+    */
+    const conductorId = leerConductor(formData);
+    const vigente = await vigenteDeVehiculo(truckId);
+    const vigenteId = vigente?.driverId ?? null;
+
+    if (conductorId && conductorId !== vigenteId) {
+      await asignarConductor({
+        truckId,
+        driverId: conductorId,
+        startedAt: new Date(),
+        usuarioId: user.id,
+      });
+    } else if (!conductorId && vigenteId) {
+      await liberarVehiculo(truckId, user.id);
+    }
 
     await logActivity({
       userId: user.id,

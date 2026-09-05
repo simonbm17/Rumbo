@@ -226,7 +226,7 @@ export async function asignarConductor(datos: DatosAsignacion) {
     if (enOtro) {
       throw new AssignmentError(
         "CONDUCTOR_EN_OTRO_VEHICULO",
-        `${enOtro.driver.firstName} ${enOtro.driver.lastName} ya está asignado al vehículo ${enOtro.truck.plate}. Liberalo de ese vehículo o transferilo a este.`,
+        `${enOtro.driver.firstName} ${enOtro.driver.lastName} ya está asignado al vehículo ${enOtro.truck.plate}. Libéralo de ese vehículo o transfiérelo a este.`,
         { driverId, truckId: enOtro.truck.id, plate: enOtro.truck.plate }
       );
     }
