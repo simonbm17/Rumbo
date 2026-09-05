@@ -49,6 +49,28 @@ export function middleware(request: NextRequest) {
     "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
   );
 
+  /*
+    HSTS: a partir de la primera visita, el navegador se niega a hablar con este
+    dominio por HTTP aunque alguien escriba `http://` o intercepte un enlace.
+    Un año es el valor habitual y el que exigen los navegadores para tomárselo
+    en serio; `includeSubDomains` lo extiende a cualquier subdominio del que se
+    sirva el sistema.
+
+    Sin `preload`, y a propósito: eso inscribe el dominio en una lista que
+    viene compilada dentro de los navegadores, tarda meses en salir y no es
+    trivial de revertir. No se firma algo así por una cabecera.
+
+    Solo en producción. En desarrollo el sistema se sirve por HTTP en
+    `localhost`, y un HSTS emitido ahí se queda cacheado en el navegador
+    obligando a HTTPS en todos los proyectos que compartan ese origen.
+  */
+  if (!dev) {
+    response.headers.set(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains"
+    );
+  }
+
   return response;
 }
 

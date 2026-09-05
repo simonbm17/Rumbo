@@ -335,7 +335,78 @@ async function validarInvariantes() {
 
 // --- carga ------------------------------------------------------------------
 
+/**
+ * GUARDIA DEL SEED DE DEMOSTRACIÓN.
+ *
+ * Lo primero que hace `main()` es `deleteMany()` sobre las once tablas. Contra
+ * una base de producción eso no «siembra datos»: borra la operación de una
+ * empresa. Antes de esta guardia bastaba un comando equivocado apuntando a la
+ * `DATABASE_URL` real.
+ *
+ * Es FAIL-CLOSED y exige LAS DOS condiciones, no una:
+ *
+ *   1. `NODE_ENV` distinto de `production`  — rechaza siempre en producción,
+ *      incluso con la autorización puesta;
+ *   2. `ALLOW_DEMO_SEED=true`               — autorización deliberada, que hay
+ *      que escribir a mano cada vez.
+ *
+ * Solo la condición 1 no bastaría: quien ejecuta el comando sin `NODE_ENV`
+ * definido —lo normal en una terminal cualquiera— pasaría la comprobación
+ * apuntando a donde sea. Por eso la barrera principal es la autorización
+ * explícita y `NODE_ENV` es el cerrojo adicional.
+ *
+ * El nombre de la base NO se usa como defensa: la convención puede cambiar y
+ * no protege nada por sí sola. Solo se muestra, saneado, para que quien lea el
+ * error sepa a dónde estaba apuntando.
+ */
+function describirDestino(url: string | undefined) {
+  if (!url) return "(DATABASE_URL no definida)";
+  try {
+    const u = new URL(url);
+    // Ni usuario, ni contraseña, ni parámetros: solo dónde estaba apuntando.
+    return `${u.hostname}:${u.port || "5432"}/${u.pathname.slice(1)}`;
+  } catch {
+    return "(DATABASE_URL no interpretable)";
+  }
+}
+
+function exigirAutorizacion() {
+  const destino = describirDestino(process.env.DATABASE_URL);
+  const motivos: string[] = [];
+
+  if (process.env.NODE_ENV === "production") {
+    motivos.push("NODE_ENV=production");
+  }
+  if (process.env.ALLOW_DEMO_SEED !== "true") {
+    motivos.push("falta ALLOW_DEMO_SEED=true");
+  }
+
+  if (motivos.length === 0) return;
+
+  console.error(
+    [
+      "",
+      "Seed de demostración BLOQUEADO. Este comando ELIMINA los datos existentes.",
+      "",
+      `  Destino     : ${destino}`,
+      `  Motivo      : ${motivos.join(" · ")}`,
+      "",
+      "Para sembrar la demo en un entorno de desarrollo, autorízalo de forma",
+      "explícita:",
+      "",
+      "  ALLOW_DEMO_SEED=true npm run db:seed",
+      "",
+      "Nunca contra la base de producción.",
+      "",
+    ].join("\n")
+  );
+  process.exit(1);
+}
+
 async function main() {
+  // ANTES de tocar nada. El primer `deleteMany()` viene justo después.
+  exigirAutorizacion();
+
   console.log("Limpiando datos anteriores…");
   await prisma.activityLog.deleteMany();
   await prisma.cargo.deleteMany();

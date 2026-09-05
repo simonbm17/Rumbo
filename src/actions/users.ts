@@ -17,10 +17,9 @@ import {
   optStr,
   str,
   toActionError,
+  MIN_PASSWORD,
   ValidationError,
 } from "@/lib/form";
-
-const MIN_PASSWORD = 8;
 
 function validatePassword(value: string) {
   if (value.length < MIN_PASSWORD) {

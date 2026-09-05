@@ -7,6 +7,16 @@ export type ActionState = { error?: string; ok?: boolean } | null;
 
 export class ValidationError extends Error {}
 
+/**
+ * Longitud mínima de contraseña.
+ *
+ * Vive acá y no dentro de `actions/users.ts` porque la aplica el formulario del
+ * producto Y la herramienta de administración de emergencia, que corre fuera de
+ * Next. Con la constante en un solo sitio, cambiar la política es cambiar un
+ * número; con dos copias, es descubrir dentro de un año que no coincidían.
+ */
+export const MIN_PASSWORD = 8;
+
 function raw(form: FormData, key: string): string {
   const value = form.get(key);
   if (typeof value !== "string") return "";
